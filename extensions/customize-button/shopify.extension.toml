@@ -1,5 +1,2 @@
 name = "customize-button"
 type = "theme"
-extension_points = [
-    "product::product-form", # renders inside the Add to Cart form
-]

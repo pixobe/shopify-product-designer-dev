@@ -1,10 +1,5 @@
 {
-  "ratings": {
-    "stars": {
-      "label": "Ratings"
-    },
-    "home": {
-      "recommendationText": "Recommended Product!"
-    }
+  "labels": {
+    "customize_button": "Customize"
   }
 }
