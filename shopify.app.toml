@@ -3,7 +3,7 @@
 client_id = "ab0f7182709851ef7296d79ecb2b8300"
 name = "product-designer-dev"
 handle = "product-designer-dev"
-application_url = "https://mac-tunnel.pixobe.com"
+application_url = "https://mactunnel.pixobe.com"
 embedded = true
 
 [build]
@@ -26,7 +26,7 @@ uri = "/webhooks/app/scopes_update"
 scopes = "write_products"
 
 [auth]
-redirect_urls = ["https://mac-tunnel.pixobe.com/auth/callback", "https://mac-tunnel.pixobe.com/auth/shopify/callback", "https://mac-tunnel.pixobe.com/api/auth/callback"]
+redirect_urls = ["https://mactunnel.pixobe.com/auth/callback", "https://mactunnel.pixobe.com/auth/shopify/callback", "https://mactunnel.pixobe.com/api/auth/callback"]
 
 [pos]
 embedded = false
