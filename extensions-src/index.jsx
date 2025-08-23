@@ -5,7 +5,10 @@ import CustomizeButton from "./CustomizeButton";
 const WcCustomizeButton = r2wc(CustomizeButton, React, ReactDOM,
 {
   props: {
-    label: "string",
+    btn_label: "string",
+    btn_background: "string",
+    btn_color: "string",
+    btn_placement: "string",
   },
 })
 customElements.define("pixobe-customize-button", WcCustomizeButton)

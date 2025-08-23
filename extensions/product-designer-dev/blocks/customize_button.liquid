@@ -1,12 +1,22 @@
 <script src="https://dev.product-designer-c4c.pages.dev/build/product-designer.esm.js" type="module" async></script>
-<script src="{{ "bundle.js" | asset_url }}" async></script>
+<script src="{{ 'bundle.js' | asset_url }}" defer></script>
 
 <div style="position: fixed; bottom: 0; right: 0;">
   <div id="container"></div>
   {% assign btn_background = block.settings.btn_background %}
   {% assign btn_color = block.settings.btn_color %}
   {% assign btn_placement = block.settings.btn_placement %}
-  {% render 'customize_button', btn_background: btn_background, btn_color: btn_color %}
+  {% assign btn_label = block.settings.btn_label %}
+  {% if btn_label == 'Customize' %}
+    {% assign btn_label = 'Customize' | t %}
+  {% endif %}
+
+  {% render 'customize_button',
+    btn_background: btn_background,
+    btn_color: btn_color,
+    btn_label: btn_label,
+    btn_placement: btn_placement
+  %}
 </div>
 {% schema %}
 {
@@ -14,6 +24,13 @@
   "target": "body",
   "enabled_on": { "templates": ["product"] },
   "settings": [
+    {
+      "type": "text",
+      "label": "Label",
+      "id": "btn_label",
+      "default": "Customize",
+      "info": "Label of the button"
+    },
     {
       "type": "color",
       "label": "Background",
@@ -33,8 +50,7 @@
       "info": "Placement of the button",
       "options": [
         { "value": "floating", "label": "Floating" },
-        { "value": "after_add_to_cart", "label": "After Cart Button" },
-        { "value": "after_buy_button", "label": "After Buy Button" }
+        { "value": "after_cart_button", "label": "After Cart Buttons" }
       ],
       "default": "floating"
     }
