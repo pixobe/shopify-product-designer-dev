@@ -1,76 +1,57 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@shopify/polaris";
-import { PlusCircleIcon } from "@shopify/polaris-icons";
-/**
- *
- * @returns
- */
+import { EditIcon } from "@shopify/polaris-icons";
+import FullScreenOverlay from "./FullScreenOverlay";
+
 export default function CustomizeButton(props) {
   const { btn_background, btn_color, btn_label, btn_placement } = props;
   const [targetEl, setTargetEl] = useState(null);
+  const [overlayActive, setOverlayActive] = useState(false);
 
   useEffect(() => {
     if (btn_placement !== "floating") {
-      // Example: append to product form
       const el = document.querySelector(".product-form__buttons");
-      if (el) {
-        setTargetEl(el);
-      }
+      if (el) setTargetEl(el);
     }
   }, [btn_placement]);
 
+  const toggleOverlay = () => setOverlayActive((prev) => !prev);
+
   const floatingButton = (
     <div
-      style={{
-        position: "fixed",
-        bottom: "50px",
-        right: "50px",
-        zIndex: 1000,
-      }}
+      className="floating"
+      style={{ "--btn-background": btn_background, "--btn-color": btn_color }}
     >
-      <button
-        style={{
-          backgroundColor: btn_background,
-          color: btn_color,
-          borderRadius: "50%",
-          width: "50px",
-          height: "50px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 0,
-        }}
-      >
-        <icon-edit></icon-edit>
+      <button type="button" className="button-floating" onClick={toggleOverlay}>
+        <Icon source={EditIcon} color="base" />
       </button>
+
+      <FullScreenOverlay active={overlayActive} onClose={toggleOverlay}>
+        <product-designer></product-designer>
+      </FullScreenOverlay>
     </div>
   );
 
-  if (btn_placement === "floating") {
-    return floatingButton;
-  }
-
   const inlineButton = (
-    <button
-      style={{
-        backgroundColor: btn_background,
-        color: btn_color,
-        marginTop: "1rem",
-      }}
-      type="button"
-      className="button button--full-width button--secondary"
+    <div
+      style={{ "--btn-background": btn_background, "--btn-color": btn_color }}
     >
-      {btn_label}
-      <Icon source={PlusCircleIcon} tone="inherit" />
-    </button>
+      <button
+        type="button"
+        onClick={toggleOverlay}
+        className="button button--full-width button--secondary button-inline"
+      >
+        {btn_label}
+      </button>
+
+      <FullScreenOverlay active={overlayActive} onClose={toggleOverlay}>
+        <product-designer></product-designer>
+      </FullScreenOverlay>
+    </div>
   );
 
-  // If target element found, append as child
-  if (targetEl) {
-    return createPortal(inlineButton, targetEl);
-  }
-
-  // Fallback: render floating button instead of inline
+  if (btn_placement === "floating") return floatingButton;
+  if (targetEl) return createPortal(inlineButton, targetEl);
   return floatingButton;
 }
