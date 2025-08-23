@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-
+import { Icon } from "@shopify/polaris";
+import { PlusCircleIcon } from "@shopify/polaris-icons";
 /**
  *
  * @returns
@@ -61,6 +62,7 @@ export default function CustomizeButton(props) {
       className="button button--full-width button--secondary"
     >
       {btn_label}
+      <Icon source={PlusCircleIcon} tone="inherit" />
     </button>
   );
 
