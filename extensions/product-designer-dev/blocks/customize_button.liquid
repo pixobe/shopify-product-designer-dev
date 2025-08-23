@@ -1,0 +1,43 @@
+<script src="https://dev.product-designer-c4c.pages.dev/build/product-designer.esm.js" type="module" async></script>
+<script src="{{ "bundle.js" | asset_url }}" async></script>
+
+<div style="position: fixed; bottom: 0; right: 0;">
+  <div id="container"></div>
+  {% assign btn_background = block.settings.btn_background %}
+  {% assign btn_color = block.settings.btn_color %}
+  {% assign btn_placement = block.settings.btn_placement %}
+  {% render 'customize_button', btn_background: btn_background, btn_color: btn_color %}
+</div>
+{% schema %}
+{
+  "name": "Customize Button",
+  "target": "body",
+  "enabled_on": { "templates": ["product"] },
+  "settings": [
+    {
+      "type": "color",
+      "label": "Background",
+      "default": "#f9f9f9",
+      "id": "btn_background"
+    },
+    {
+      "type": "color",
+      "label": "Text Color",
+      "default": "#3d3d3d",
+      "id": "btn_color"
+    },
+    {
+      "type": "select",
+      "id": "btn_placement",
+      "label": "Button Placement",
+      "info": "Placement of the button",
+      "options": [
+        { "value": "floating", "label": "Floating" },
+        { "value": "after_add_to_cart", "label": "After Cart Button" },
+        { "value": "after_buy_button", "label": "After Buy Button" }
+      ],
+      "default": "floating"
+    }
+  ]
+}
+{% endschema %}

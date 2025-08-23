@@ -1,0 +1,5 @@
+name = "product-designer-dev"
+type = "theme"
+
+[RemoteAsset]
+enabled = true
