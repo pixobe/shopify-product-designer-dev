@@ -33,7 +33,7 @@
   padding: 0;
   cursor: pointer;
   /* Box Shadow for the floating effect */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 8px hsl(0, 0, 10%);
   /* Optional: Hover effect for a more interactive feel */
   transition:
     box-shadow 0.3s ease-in-out,
@@ -83,4 +83,9 @@
   background: none;
   font-size: 1.5rem;
   cursor: pointer;
+}
+
+.customize-container {
+  height: 100%;
+  width: 100%;
 }

@@ -6,7 +6,6 @@ import FullScreenOverlay from "./FullScreenOverlay";
 
 export default function CustomizeButton(props) {
   const { btn_background, btn_color, btn_label, btn_placement } = props;
-  console.log("Button Props:", props);
   const [targetEl, setTargetEl] = useState(null);
   const [overlayActive, setOverlayActive] = useState(false);
 
@@ -20,7 +19,6 @@ export default function CustomizeButton(props) {
   }, [btn_placement]);
 
   const toggleOverlay = async () => {
-    console.log("Fetching product config...");
     const res = await fetch(
       "/apps/pixobe-product-designer/product-config?productId=9486903247152",
       {
@@ -30,13 +28,26 @@ export default function CustomizeButton(props) {
         },
       },
     );
-
     const data = await res.json();
     setResponse(data);
-    console.log(data);
     setOverlayActive((prev) => !prev);
   };
 
+  // const result = response?.result;
+  // console.log("Product Config result:", result);
+
+  const result = {
+    config: {},
+    media: [
+      {
+        src: "https://cdn.shopify.com/s/files/1/0813/7575/6592/files/PurpleTshirt01.webp?v=1718792164",
+        stroke: "",
+      },
+    ],
+    meta: {
+      name: "TShirt",
+    },
+  };
   const floatingButton = (
     <Fragment>
       <button
@@ -49,7 +60,28 @@ export default function CustomizeButton(props) {
       </button>
 
       <FullScreenOverlay active={overlayActive} onClose={toggleOverlay}>
-        <product-designer></product-designer>
+        {result && (
+          <div
+            ref={(el) => {
+              if (el && result) {
+                // Clear any existing content
+                el.innerHTML = "";
+
+                // Create the web component
+                const productDesigner =
+                  document.createElement("product-designer");
+
+                // Set properties directly on the element
+                productDesigner.config = result.config;
+                productDesigner.media = result.media;
+                productDesigner.meta = result.meta;
+
+                // Append to container
+                el.appendChild(productDesigner);
+              }
+            }}
+          />
+        )}
       </FullScreenOverlay>
     </Fragment>
   );
@@ -67,7 +99,29 @@ export default function CustomizeButton(props) {
       </button>
 
       <FullScreenOverlay active={overlayActive} onClose={toggleOverlay}>
-        <product-designer config={response?.config}></product-designer>
+        {result && (
+          <div
+            className="customize-container"
+            ref={(el) => {
+              if (el && result) {
+                // Clear any existing content
+                el.innerHTML = "";
+
+                // Create the web component
+                const productDesigner =
+                  document.createElement("product-designer");
+
+                // Set properties directly on the element
+                productDesigner.config = result.config;
+                productDesigner.media = result.media;
+                productDesigner.meta = result.meta;
+
+                // Append to container
+                el.appendChild(productDesigner);
+              }
+            }}
+          />
+        )}
       </FullScreenOverlay>
     </div>
   );
