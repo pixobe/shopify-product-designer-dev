@@ -58,7 +58,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         //   }
         // });
 
-        return json({
+        return Response.json({
             success: true,
             message: "Custom action completed",
             data: { productHandle, quantity }

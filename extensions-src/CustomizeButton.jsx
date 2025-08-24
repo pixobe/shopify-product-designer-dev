@@ -6,8 +6,11 @@ import FullScreenOverlay from "./FullScreenOverlay";
 
 export default function CustomizeButton(props) {
   const { btn_background, btn_color, btn_label, btn_placement } = props;
+  console.log("Button Props:", props);
   const [targetEl, setTargetEl] = useState(null);
   const [overlayActive, setOverlayActive] = useState(false);
+
+  const [response, setResponse] = useState(null);
 
   useEffect(() => {
     if (btn_placement !== "floating") {
@@ -16,7 +19,23 @@ export default function CustomizeButton(props) {
     }
   }, [btn_placement]);
 
-  const toggleOverlay = () => setOverlayActive((prev) => !prev);
+  const toggleOverlay = async () => {
+    console.log("Fetching product config...");
+    const res = await fetch(
+      "/apps/pixobe-product-designer/product-config?productId=9486903247152",
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    const data = await res.json();
+    setResponse(data);
+    console.log(data);
+    setOverlayActive((prev) => !prev);
+  };
 
   const floatingButton = (
     <div
@@ -46,7 +65,7 @@ export default function CustomizeButton(props) {
       </button>
 
       <FullScreenOverlay active={overlayActive} onClose={toggleOverlay}>
-        <product-designer></product-designer>
+        <product-designer config={response?.config}></product-designer>
       </FullScreenOverlay>
     </div>
   );
