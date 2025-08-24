@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@shopify/polaris";
 import { EditIcon } from "@shopify/polaris-icons";
@@ -38,18 +38,20 @@ export default function CustomizeButton(props) {
   };
 
   const floatingButton = (
-    <div
-      className="floating"
-      style={{ "--btn-background": btn_background, "--btn-color": btn_color }}
-    >
-      <button type="button" className="button-floating" onClick={toggleOverlay}>
+    <Fragment>
+      <button
+        type="button"
+        className="floating button-floating"
+        style={{ "--btn-background": btn_background, "--btn-color": btn_color }}
+        onClick={toggleOverlay}
+      >
         <Icon source={EditIcon} color="base" />
       </button>
 
       <FullScreenOverlay active={overlayActive} onClose={toggleOverlay}>
         <product-designer></product-designer>
       </FullScreenOverlay>
-    </div>
+    </Fragment>
   );
 
   const inlineButton = (
