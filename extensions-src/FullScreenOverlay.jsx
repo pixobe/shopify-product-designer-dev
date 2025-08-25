@@ -5,12 +5,7 @@ export default function FullScreenOverlay({ active, onClose, children }) {
 
   return createPortal(
     <div className="custom-overlay">
-      <div className="custom-overlay-content">
-        {children}
-        <button onClick={onClose} className="custom-overlay-close">
-          ×
-        </button>
-      </div>
+      <div className="custom-overlay-content">{children}</div>
     </div>,
     document.body,
   );

@@ -1,8 +1,38 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@shopify/polaris";
 import { EditIcon } from "@shopify/polaris-icons";
 import FullScreenOverlay from "./FullScreenOverlay";
+
+function CreateCustomizeOverlay({ overlayActive, toggleOverlay, result }) {
+  const containerRef = useRef(null);
+  const designerRef = useRef(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    if (result) {
+      if (!designerRef.current) {
+        designerRef.current = document.createElement("product-designer");
+        containerRef.current.appendChild(designerRef.current);
+      }
+      designerRef.current.config = result.config;
+      designerRef.current.media = result.media;
+      designerRef.current.meta = result.meta;
+    } else {
+      if (designerRef.current) {
+        designerRef.current.remove();
+        designerRef.current = null;
+      }
+    }
+  }, [result]);
+
+  return (
+    <FullScreenOverlay active={overlayActive} onClose={toggleOverlay}>
+      <div ref={containerRef} className="container-ref" />
+    </FullScreenOverlay>
+  );
+}
 
 export default function CustomizeButton(props) {
   const { btn_background, btn_color, btn_label, btn_placement } = props;
@@ -33,21 +63,8 @@ export default function CustomizeButton(props) {
     setOverlayActive((prev) => !prev);
   };
 
-  // const result = response?.result;
-  // console.log("Product Config result:", result);
+  const result = response?.result;
 
-  const result = {
-    config: {},
-    media: [
-      {
-        src: "https://cdn.shopify.com/s/files/1/0813/7575/6592/files/PurpleTshirt01.webp?v=1718792164",
-        stroke: "",
-      },
-    ],
-    meta: {
-      name: "TShirt",
-    },
-  };
   const floatingButton = (
     <Fragment>
       <button
@@ -59,30 +76,11 @@ export default function CustomizeButton(props) {
         <Icon source={EditIcon} color="base" />
       </button>
 
-      <FullScreenOverlay active={overlayActive} onClose={toggleOverlay}>
-        {result && (
-          <div
-            ref={(el) => {
-              if (el && result) {
-                // Clear any existing content
-                el.innerHTML = "";
-
-                // Create the web component
-                const productDesigner =
-                  document.createElement("product-designer");
-
-                // Set properties directly on the element
-                productDesigner.config = result.config;
-                productDesigner.media = result.media;
-                productDesigner.meta = result.meta;
-
-                // Append to container
-                el.appendChild(productDesigner);
-              }
-            }}
-          />
-        )}
-      </FullScreenOverlay>
+      <CreateCustomizeOverlay
+        overlayActive={overlayActive}
+        toggleOverlay={toggleOverlay}
+        result={result}
+      />
     </Fragment>
   );
 
@@ -98,31 +96,11 @@ export default function CustomizeButton(props) {
         {btn_label}
       </button>
 
-      <FullScreenOverlay active={overlayActive} onClose={toggleOverlay}>
-        {result && (
-          <div
-            className="customize-container"
-            ref={(el) => {
-              if (el && result) {
-                // Clear any existing content
-                el.innerHTML = "";
-
-                // Create the web component
-                const productDesigner =
-                  document.createElement("product-designer");
-
-                // Set properties directly on the element
-                productDesigner.config = result.config;
-                productDesigner.media = result.media;
-                productDesigner.meta = result.meta;
-
-                // Append to container
-                el.appendChild(productDesigner);
-              }
-            }}
-          />
-        )}
-      </FullScreenOverlay>
+      <CreateCustomizeOverlay
+        overlayActive={overlayActive}
+        toggleOverlay={toggleOverlay}
+        result={result}
+      />
     </div>
   );
 
