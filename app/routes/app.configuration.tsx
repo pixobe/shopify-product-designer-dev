@@ -14,16 +14,13 @@ import {
   ButtonGroup,
   EmptyState,
   Thumbnail,
-  Banner,
-  Modal,
-  Grid,
-  Spinner,
-  Checkbox,
+  Banner
 } from "@shopify/polaris";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { useFetcher } from "@remix-run/react";
 import { PlusIcon, ImageAddIcon } from '@shopify/polaris-icons';
+import { ImageSelectionModal } from "../components/ImageModal";
 
 
 interface Font {
@@ -130,7 +127,75 @@ export default function ConfigurationPage() {
     setNewFont({ name: '', url: '' });
   };
 
+  // Effect to handle loading state when fetcher data arrives
+  useEffect(() => {
+    if (fetcher.data) {
+      console.log('Fetcher data received:', fetcher.data);
+      if (isLoadingMedia) {
+        setIsLoadingMedia(false);
+        setIsMediaModalOpen(true);
+      }
+    }
+  }, [fetcher.data, isLoadingMedia]);
+
   // Gallery management functions
+  const handleShopifyGallerySelect = useCallback(async (galleryId: string) => {
+    setCurrentGalleryId(galleryId);
+    setSelectedImages([]);
+
+    try {
+      // Always fetch fresh data when opening modal
+      setIsLoadingMedia(true);
+      fetcher.load('/api/shopify-files');
+      // Modal will open when data is loaded (handled by useEffect)
+    } catch (error) {
+      console.error('Error fetching Shopify files:', error);
+      setIsLoadingMedia(false);
+    }
+  }, [fetcher]);
+
+  const handleAddSelectedImages = () => {
+    console.log('Adding selected images:', selectedImages);
+    console.log('Current gallery ID:', currentGalleryId);
+    console.log('Fetcher data:', fetcher.data);
+
+    if (currentGalleryId && selectedImages.length > 0) {
+      // Map selected image IDs to actual image data from fetcher
+      const imageFiles: ImageFile[] = selectedImages.map(imageId => {
+        const file = fetcher.data?.files?.find((f: any) => `shopify-${f.id}` === imageId);
+        console.log(`Mapping image ${imageId}:`, file);
+        return {
+          id: imageId,
+          name: file?.alt || file?.image?.url?.split('/').pop() || 'Shopify Image',
+          url: file?.image?.url || '',
+        };
+      }).filter(img => img.url); // Filter out any invalid images
+
+      console.log('Mapped image files:', imageFiles);
+
+      if (imageFiles.length > 0) {
+        setGalleries(prev =>
+          prev.map(gallery =>
+            gallery.id === currentGalleryId
+              ? { ...gallery, images: [...gallery.images, ...imageFiles] }
+              : gallery
+          )
+        );
+      }
+    }
+
+    // Reset modal state
+    setIsMediaModalOpen(false);
+    setSelectedImages([]);
+    setCurrentGalleryId(null);
+  };
+
+  const handleCloseMediaModal = () => {
+    setIsMediaModalOpen(false);
+    setSelectedImages([]);
+    setCurrentGalleryId(null);
+  };
+
   const handleCreateGallery = () => {
     // Only create gallery if name is provided and not empty
     if (!newGalleryName.trim()) {
@@ -150,55 +215,6 @@ export default function ConfigurationPage() {
     setGalleries(prev => prev.filter(gallery => gallery.id !== galleryId));
   };
 
-  const handleShopifyGallerySelect = useCallback(async (galleryId: string) => {
-    try {
-      // Use fetcher data if available, otherwise fetch fresh data
-      let filesData;
-      if (fetcher.data && fetcher.data.files) {
-        filesData = fetcher.data.files;
-      } else {
-        // Fetch fresh data if not available
-        const response = await fetch('/api/shopify-files', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          filesData = data.files || [];
-          console.log(filesData)
-        } else {
-          console.error('Failed to fetch Shopify files');
-          return;
-        }
-      }
-
-      // Filter for image files only
-      const imageFiles: ImageFile[] = filesData
-        .filter((file: any) => file.__typename === 'MediaImage')
-        .map((file: any) => ({
-          id: `shopify-${file.id}`,
-          name: file.alt || file.image?.url?.split('/').pop() || 'Shopify Image',
-          url: file.image?.url || file.image?.originalSrc
-        }))
-        .filter((img: ImageFile) => img.url); // Only include files with valid URLs
-
-      if (imageFiles.length > 0) {
-        setGalleries(prev => prev.map(gallery =>
-          gallery.id === galleryId
-            ? { ...gallery, images: [...gallery.images, ...imageFiles] }
-            : gallery
-        ));
-      } else {
-        console.log('No image files found in Shopify store');
-      }
-    } catch (error) {
-      console.error('Error fetching Shopify files:', error);
-    }
-  }, [fetcher.data]);
-
   const handleDeleteImage = useCallback((galleryId: string, imageId: string) => {
     setGalleries(prev => prev.map(gallery =>
       gallery.id === galleryId
@@ -206,6 +222,16 @@ export default function ConfigurationPage() {
         : gallery
     ));
   }, []);
+
+  const handleImageSelection = (imageId: string, isSelected: boolean) => {
+    setSelectedImages(prev => {
+      if (isSelected) {
+        return prev.includes(imageId) ? prev : [...prev, imageId];
+      } else {
+        return prev.filter(id => id !== imageId);
+      }
+    });
+  };
 
   const renderTabContent = () => {
     switch (selectedTab) {
@@ -316,7 +342,6 @@ export default function ConfigurationPage() {
         return (
           <Card>
             <BlockStack gap="400">
-
               <FormLayout>
                 <Text as="h3" variant="headingSm">
                   Gallery Management
@@ -344,6 +369,15 @@ export default function ConfigurationPage() {
                     disabled={!newGalleryName.trim()}
                   >
                     Create Gallery
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      console.log('Fetching Shopify files for testing...');
+                      fetcher.load('/api/shopify-files');
+                    }}
+                    variant="secondary"
+                  >
+                    Test Fetch Files
                   </Button>
                 </InlineStack>
 
@@ -466,8 +500,16 @@ export default function ConfigurationPage() {
           </BlockStack>
         </Layout.Section>
       </Layout>
+
+      <ImageSelectionModal
+        isOpen={isMediaModalOpen}
+        onClose={handleCloseMediaModal}
+        onAddImages={handleAddSelectedImages}
+        selectedImages={selectedImages}
+        onImageSelection={handleImageSelection}
+        fetcher={fetcher}
+        isLoading={isLoadingMedia}
+      />
     </Page>
   );
 }
-
-

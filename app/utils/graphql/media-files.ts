@@ -3,11 +3,11 @@
  * @param {any} client - The Shopify client to use for making the GraphQL request
  * @returns {Promise<any>} - The response from the GraphQL query
  */
-export async function getAllFiles(client: any) {
+export async function GetShopMedia(client: any) {
   return client.graphql(
     `#graphql
-      query GetAllFiles {
-        files(first: 100) {
+      query GetAllImages {
+        files(first: 100, query: "media_content_type:IMAGE") {
           edges {
             node {
               id
@@ -21,21 +21,6 @@ export async function getAllFiles(client: any) {
                   width
                   height
                 }
-              }
-              ... on Video {
-                duration
-                originalSource {
-                  url
-                  width
-                  height
-                  format
-                  mimeType
-                }
-              }
-              ... on GenericFile {
-                url
-                mimeType
-                originalFileSize
               }
             }
           }
