@@ -71,7 +71,7 @@ export function ImageSelectionModal({
         >
             <Modal.Section>
                 {isLoading || fetcher.state === 'loading' ? (
-                    <BlockStack gap="400" align="center">
+                    <BlockStack gap="400" align="center" inlineAlign="center">
                         <Spinner size="large" />
                         <Text as="p" alignment="center">
                             Loading Shopify media files...

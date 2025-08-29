@@ -18,9 +18,12 @@ import {
 } from "@shopify/polaris";
 import { useState, useCallback, useEffect } from "react";
 import { TitleBar } from "@shopify/app-bridge-react";
-import { useFetcher } from "@remix-run/react";
+import { useFetcher, useLoaderData } from "@remix-run/react";
 import { PlusIcon, ImageAddIcon } from '@shopify/polaris-icons';
 import { ImageSelectionModal } from "../components/ImageModal";
+import type { LoaderFunctionArgs } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import { authenticate } from "../shopify.server";
 
 
 interface Font {
@@ -47,8 +50,82 @@ interface ShopifyFilesResponse {
   error?: string;
 }
 
+interface ConfigurationData {
+  fonts: Font[];
+  galleries: Gallery[];
+}
+
+interface LoaderData {
+  success: boolean;
+  configuration: ConfigurationData;
+  metafieldId: string | null;
+}
+
+// Loader function to get saved configuration
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { admin } = await authenticate.admin(request);
+
+  try {
+    // Get the shop with the configuration metafield
+    const shopResponse = await admin.graphql(`
+      query getConfiguration {
+        shop {
+          id
+          metafield(namespace: "$app", key: "pixobe-app-config") {
+            id
+            value
+            jsonValue
+          }
+        }
+      }
+    `);
+
+    const shopData = await shopResponse.json();
+    const metafield = shopData.data?.shop?.metafield;
+
+    if (metafield) {
+      // Parse the configuration data
+      const configData = metafield.jsonValue || JSON.parse(metafield.value);
+
+      return json({
+        success: true,
+        configuration: configData,
+        metafieldId: metafield.id
+      });
+    } else {
+      // No configuration found, return default config
+      return json({
+        success: true,
+        configuration: {
+          fonts: [
+            { id: '1', name: 'Arial', url: '' },
+            { id: '2', name: 'Roboto', url: 'https://fonts.googleapis.com/css2?family=Roboto' },
+          ],
+          galleries: []
+        },
+        metafieldId: null
+      });
+    }
+
+  } catch (error) {
+    console.error("Error loading configuration:", error);
+    return json({
+      success: false,
+      configuration: {
+        fonts: [
+          { id: '1', name: 'Arial', url: '' },
+          { id: '2', name: 'Roboto', url: 'https://fonts.googleapis.com/css2?family=Roboto' },
+        ],
+        galleries: []
+      },
+      metafieldId: null
+    });
+  }
+};
+
 
 export default function ConfigurationPage() {
+  const { configuration } = useLoaderData<LoaderData>();
   const [selectedTab, setSelectedTab] = useState(0);
   const fetcher = useFetcher<ShopifyFilesResponse>();
 
@@ -58,24 +135,21 @@ export default function ConfigurationPage() {
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [isLoadingMedia, setIsLoadingMedia] = useState(false);
 
-  const [fonts, setFonts] = useState<Font[]>([
-    { id: '1', name: 'Arial', url: '' },
-    { id: '2', name: 'Roboto', url: 'https://fonts.googleapis.com/css2?family=Roboto' },
-  ]);
+  // Initialize state with loaded configuration
+  const [fonts, setFonts] = useState<Font[]>(configuration.fonts);
+  const [galleries, setGalleries] = useState<Gallery[]>(configuration.galleries);
 
   const [newFont, setNewFont] = useState({ name: '', url: '' });
   const [editingFont, setEditingFont] = useState<Font | null>(null);
-
-  // Gallery management state
-  const [galleries, setGalleries] = useState<Gallery[]>([]);
   const [newGalleryName, setNewGalleryName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const tabs = [
     {
       id: 'text',
-      content: 'Text',
-      accessibilityLabel: 'Text Settings',
-      panelID: 'text-settings',
+      content: 'Fonts',
+      accessibilityLabel: 'Fonts Settings',
+      panelID: 'fonts-settings',
     },
     {
       id: 'image',
@@ -125,6 +199,40 @@ export default function ConfigurationPage() {
   const handleCancelEdit = () => {
     setEditingFont(null);
     setNewFont({ name: '', url: '' });
+  };
+
+  // Save configuration function
+  const handleSaveConfiguration = async () => {
+    setIsLoading(true);
+
+    const configurationData = {
+      fonts,
+      galleries
+    };
+
+    try {
+      const response = await fetch('/api/save-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(configurationData)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        console.log('Configuration saved successfully');
+        // You could add a success toast here if needed
+      } else {
+        console.error('Failed to save configuration:', result.error);
+        // You could add an error toast here if needed
+      }
+    } catch (error) {
+      console.error('Error saving configuration:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Effect to handle loading state when fetcher data arrives
@@ -241,7 +349,7 @@ export default function ConfigurationPage() {
             <BlockStack gap="400">
               <FormLayout>
                 <Text as="h3" variant="headingSm">
-                  Font Management
+                  Fonts
                 </Text>
 
                 <BlockStack gap="300">
@@ -370,15 +478,6 @@ export default function ConfigurationPage() {
                   >
                     Create Gallery
                   </Button>
-                  <Button
-                    onClick={() => {
-                      console.log('Fetching Shopify files for testing...');
-                      fetcher.load('/api/shopify-files');
-                    }}
-                    variant="secondary"
-                  >
-                    Test Fetch Files
-                  </Button>
                 </InlineStack>
 
                 <ResourceList
@@ -486,9 +585,13 @@ export default function ConfigurationPage() {
 
   return (
     <Page>
-      <TitleBar title="Configuration" >
-        <button variant="primary">
-          Generate a product
+      <TitleBar title="Configuration">
+        <button
+          variant="primary"
+          onClick={handleSaveConfiguration}
+          disabled={isLoading}
+        >
+          {isLoading ? 'Saving...' : 'Save'}
         </button>
       </TitleBar>
       <Layout>
