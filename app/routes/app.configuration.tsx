@@ -13,13 +13,18 @@ import {
   ResourceItem,
   ButtonGroup,
   EmptyState,
-  DropZone,
   Thumbnail,
   Banner,
+  Modal,
+  Grid,
+  Spinner,
+  Checkbox,
 } from "@shopify/polaris";
 import { useState, useCallback } from "react";
-import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
-import { PlusIcon, ImageIcon } from '@shopify/polaris-icons';
+import { TitleBar } from "@shopify/app-bridge-react";
+import { useFetcher } from "@remix-run/react";
+import { PlusIcon, ImageAddIcon } from '@shopify/polaris-icons';
+
 
 interface Font {
   id: string;
@@ -39,9 +44,22 @@ interface Gallery {
   images: ImageFile[];
 }
 
+interface ShopifyFilesResponse {
+  success: boolean;
+  files: any[];
+  error?: string;
+}
+
+
 export default function ConfigurationPage() {
   const [selectedTab, setSelectedTab] = useState(0);
-  const app = useAppBridge();
+  const fetcher = useFetcher<ShopifyFilesResponse>();
+
+  // Modal state for Shopify media selection
+  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+  const [currentGalleryId, setCurrentGalleryId] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [isLoadingMedia, setIsLoadingMedia] = useState(false);
 
   const [fonts, setFonts] = useState<Font[]>([
     { id: '1', name: 'Arial', url: '' },
@@ -54,7 +72,6 @@ export default function ConfigurationPage() {
   // Gallery management state
   const [galleries, setGalleries] = useState<Gallery[]>([]);
   const [newGalleryName, setNewGalleryName] = useState('');
-  const [uploadingImages, setUploadingImages] = useState<{ [galleryId: string]: boolean }>({});
 
   const tabs = [
     {
@@ -133,60 +150,54 @@ export default function ConfigurationPage() {
     setGalleries(prev => prev.filter(gallery => gallery.id !== galleryId));
   };
 
-  // Image management functions
-  const handleImageUpload = useCallback((files: File[], galleryId: string) => {
-    setUploadingImages(prev => ({ ...prev, [galleryId]: true }));
-
-    // Convert files to ImageFile objects
-    const newImages: ImageFile[] = files.map(file => ({
-      id: `${Date.now()}-${Math.random()}`,
-      name: file.name,
-      url: URL.createObjectURL(file) // In real app, you'd upload to server
-    }));
-
-    setGalleries(prev => prev.map(gallery =>
-      gallery.id === galleryId
-        ? { ...gallery, images: [...gallery.images, ...newImages] }
-        : gallery
-    ));
-
-    setUploadingImages(prev => ({ ...prev, [galleryId]: false }));
-  }, []);
-
   const handleShopifyGallerySelect = useCallback(async (galleryId: string) => {
     try {
-      const selection = await app.resourcePicker({
-        type: 'product',
-        multiple: true,
-      });
-
-      if (selection && selection.length > 0) {
-        // Extract images from selected products
-        const newImages: ImageFile[] = [];
-        selection.forEach((product: any) => {
-          if (product.images && product.images.length > 0) {
-            product.images.forEach((image: any) => {
-              newImages.push({
-                id: `shopify-${image.id}`,
-                name: image.altText || `${product.title} - Image`,
-                url: image.originalSrc || image.url
-              });
-            });
-          }
+      // Use fetcher data if available, otherwise fetch fresh data
+      let filesData;
+      if (fetcher.data && fetcher.data.files) {
+        filesData = fetcher.data.files;
+      } else {
+        // Fetch fresh data if not available
+        const response = await fetch('/api/shopify-files', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         });
 
-        if (newImages.length > 0) {
-          setGalleries(prev => prev.map(gallery =>
-            gallery.id === galleryId
-              ? { ...gallery, images: [...gallery.images, ...newImages] }
-              : gallery
-          ));
+        if (response.ok) {
+          const data = await response.json();
+          filesData = data.files || [];
+          console.log(filesData)
+        } else {
+          console.error('Failed to fetch Shopify files');
+          return;
         }
       }
+
+      // Filter for image files only
+      const imageFiles: ImageFile[] = filesData
+        .filter((file: any) => file.__typename === 'MediaImage')
+        .map((file: any) => ({
+          id: `shopify-${file.id}`,
+          name: file.alt || file.image?.url?.split('/').pop() || 'Shopify Image',
+          url: file.image?.url || file.image?.originalSrc
+        }))
+        .filter((img: ImageFile) => img.url); // Only include files with valid URLs
+
+      if (imageFiles.length > 0) {
+        setGalleries(prev => prev.map(gallery =>
+          gallery.id === galleryId
+            ? { ...gallery, images: [...gallery.images, ...imageFiles] }
+            : gallery
+        ));
+      } else {
+        console.log('No image files found in Shopify store');
+      }
     } catch (error) {
-      console.error('Error selecting from Shopify gallery:', error);
+      console.error('Error fetching Shopify files:', error);
     }
-  }, [app]);
+  }, [fetcher.data]);
 
   const handleDeleteImage = useCallback((galleryId: string, imageId: string) => {
     setGalleries(prev => prev.map(gallery =>
@@ -351,7 +362,6 @@ export default function ConfigurationPage() {
                   }
                   renderItem={(item) => {
                     const { id, name, images } = item;
-                    const isUploading = uploadingImages[id] || false;
 
                     return (
                       <ResourceItem
@@ -373,33 +383,20 @@ export default function ConfigurationPage() {
                               <Button
                                 size="slim"
                                 onClick={() => handleShopifyGallerySelect(id)}
-                                icon={ImageIcon}
-                                disabled={isUploading}
+                                icon={ImageAddIcon}
                               >
-                                Select from Gallery
+                                Media
                               </Button>
                               <Button
                                 size="slim"
                                 variant="tertiary"
                                 tone="critical"
                                 onClick={() => handleDeleteGallery(id)}
-                                disabled={isUploading}
                               >
                                 Delete
                               </Button>
                             </ButtonGroup>
                           </InlineStack>
-
-                          {/* Image Upload Area */}
-                          <DropZone
-                            accept="image/*"
-                            type="image"
-                            allowMultiple
-                            onDrop={(files) => handleImageUpload(files, id)}
-                            disabled={isUploading}
-                          >
-                            <DropZone.FileUpload actionTitle="Add images" actionHint="or drop files to upload" />
-                          </DropZone>
 
                           {/* Image Thumbnails */}
                           {images.length > 0 && (

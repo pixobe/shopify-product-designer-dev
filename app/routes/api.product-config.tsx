@@ -1,6 +1,6 @@
 import type { LoaderFunction } from "@remix-run/node";
 import { unauthenticated } from "../shopify.server";
-import { getProductDetails, getProductImageQuery } from "app/utils/graphql/product";
+import { getProductImageQuery } from "app/utils/graphql/product";
 
 export const loader: LoaderFunction = async ({ request }) => {
 
@@ -16,8 +16,6 @@ export const loader: LoaderFunction = async ({ request }) => {
   );
 
   const productId = url.searchParams.get("productId");
-
-  console.log('productId', productId);
 
   if (!productId) {
     return Response.json({ message: "ProductID missing", success: false }, { status: 400 });

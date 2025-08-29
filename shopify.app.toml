@@ -2,9 +2,9 @@
 
 client_id = "ab0f7182709851ef7296d79ecb2b8300"
 name = "Product Desginer Dev"
-handle = "product-designer-dev"
 application_url = "https://mactunnel.pixobe.com"
 embedded = true
+handle = "product-designer-dev"
 
 [build]
 automatically_update_urls_on_dev = true
