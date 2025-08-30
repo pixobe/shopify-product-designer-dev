@@ -56,13 +56,13 @@ export async function searchProductsByName(
             node {
               id
               title
-              handle
-              status
-              createdAt
-              updatedAt
-              featuredImage {
-                url
-                altText
+              featuredMedia {
+               id
+               preview {
+                 image {
+                   url
+                 }
+               }
               }
             }
           }

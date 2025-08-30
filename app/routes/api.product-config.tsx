@@ -30,8 +30,6 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   const product = productImages.data.product;
 
-  console.log("Got Images :: ", product);
-
   const mediaItems: Array<any> = product.media.edges.map((edge: any) => ({
     src: edge.node.image.url,
     stroke: "",

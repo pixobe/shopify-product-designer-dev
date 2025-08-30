@@ -14,15 +14,17 @@ import {
   ButtonGroup,
   EmptyState,
   Thumbnail,
-  Banner
+  Banner,
+  InlineGrid,
+  Box,
+  Icon,
 } from "@shopify/polaris";
 import { useState, useCallback, useEffect } from "react";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { useFetcher, useLoaderData } from "@remix-run/react";
-import { PlusIcon, ImageAddIcon } from '@shopify/polaris-icons';
-import { ImageSelectionModal } from "../components/ImageModal";
+import { PlusIcon, ImageAddIcon, XIcon, ChevronDownIcon, ChevronUpIcon } from '@shopify/polaris-icons';
+import { ImageSelectionModal, type SelectedImageData } from "../components/ImageModal";
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 
 
@@ -87,14 +89,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       // Parse the configuration data
       const configData = metafield.jsonValue || JSON.parse(metafield.value);
 
-      return json({
+      return ({
         success: true,
         configuration: configData,
         metafieldId: metafield.id
       });
     } else {
       // No configuration found, return default config
-      return json({
+      return ({
         success: true,
         configuration: {
           fonts: [
@@ -109,7 +111,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   } catch (error) {
     console.error("Error loading configuration:", error);
-    return json({
+    return ({
       success: false,
       configuration: {
         fonts: [
@@ -131,9 +133,8 @@ export default function ConfigurationPage() {
 
   // Modal state for Shopify media selection
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
-  const [currentGalleryId, setCurrentGalleryId] = useState<string | null>(null);
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [isLoadingMedia, setIsLoadingMedia] = useState(false);
+  const [selectedGalleryId, setSelectedGalleryId] = useState<string | null>(null);
 
   // Initialize state with loaded configuration
   const [fonts, setFonts] = useState<Font[]>(configuration.fonts);
@@ -143,6 +144,7 @@ export default function ConfigurationPage() {
   const [editingFont, setEditingFont] = useState<Font | null>(null);
   const [newGalleryName, setNewGalleryName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [expandedGalleries, setExpandedGalleries] = useState<Set<string>>(new Set());
 
   const tabs = [
     {
@@ -153,9 +155,9 @@ export default function ConfigurationPage() {
     },
     {
       id: 'image',
-      content: 'Image',
-      accessibilityLabel: 'Image Settings',
-      panelID: 'image-settings',
+      content: 'Gallery',
+      accessibilityLabel: 'Gallery Settings',
+      panelID: 'gallery-settings',
     },
   ];
 
@@ -247,62 +249,10 @@ export default function ConfigurationPage() {
   }, [fetcher.data, isLoadingMedia]);
 
   // Gallery management functions
-  const handleShopifyGallerySelect = useCallback(async (galleryId: string) => {
-    setCurrentGalleryId(galleryId);
-    setSelectedImages([]);
-
-    try {
-      // Always fetch fresh data when opening modal
-      setIsLoadingMedia(true);
-      fetcher.load('/api/shopify-files');
-      // Modal will open when data is loaded (handled by useEffect)
-    } catch (error) {
-      console.error('Error fetching Shopify files:', error);
-      setIsLoadingMedia(false);
-    }
-  }, [fetcher]);
-
-  const handleAddSelectedImages = () => {
-    console.log('Adding selected images:', selectedImages);
-    console.log('Current gallery ID:', currentGalleryId);
-    console.log('Fetcher data:', fetcher.data);
-
-    if (currentGalleryId && selectedImages.length > 0) {
-      // Map selected image IDs to actual image data from fetcher
-      const imageFiles: ImageFile[] = selectedImages.map(imageId => {
-        const file = fetcher.data?.files?.find((f: any) => `shopify-${f.id}` === imageId);
-        console.log(`Mapping image ${imageId}:`, file);
-        return {
-          id: imageId,
-          name: file?.alt || file?.image?.url?.split('/').pop() || 'Shopify Image',
-          url: file?.image?.url || '',
-        };
-      }).filter(img => img.url); // Filter out any invalid images
-
-      console.log('Mapped image files:', imageFiles);
-
-      if (imageFiles.length > 0) {
-        setGalleries(prev =>
-          prev.map(gallery =>
-            gallery.id === currentGalleryId
-              ? { ...gallery, images: [...gallery.images, ...imageFiles] }
-              : gallery
-          )
-        );
-      }
-    }
-
-    // Reset modal state
-    setIsMediaModalOpen(false);
-    setSelectedImages([]);
-    setCurrentGalleryId(null);
-  };
-
-  const handleCloseMediaModal = () => {
-    setIsMediaModalOpen(false);
-    setSelectedImages([]);
-    setCurrentGalleryId(null);
-  };
+  const handleShopifyGallerySelect = (galleryId: string) => {
+    setSelectedGalleryId(galleryId);
+    setIsMediaModalOpen(true);
+  }
 
   const handleCreateGallery = () => {
     // Only create gallery if name is provided and not empty
@@ -315,7 +265,7 @@ export default function ConfigurationPage() {
       name: newGalleryName.trim(),
       images: []
     };
-    setGalleries(prev => [...prev, gallery]);
+    setGalleries(prev => [gallery, ...prev]);
     setNewGalleryName('');
   };
 
@@ -331,188 +281,213 @@ export default function ConfigurationPage() {
     ));
   }, []);
 
-  const handleImageSelection = (imageId: string, isSelected: boolean) => {
-    setSelectedImages(prev => {
-      if (isSelected) {
-        return prev.includes(imageId) ? prev : [...prev, imageId];
+  // Gallery expansion functions
+  const toggleGalleryExpansion = useCallback((galleryId: string) => {
+    setExpandedGalleries(prev => {
+      const newExpanded = new Set(prev);
+      if (newExpanded.has(galleryId)) {
+        newExpanded.delete(galleryId);
       } else {
-        return prev.filter(id => id !== imageId);
+        newExpanded.add(galleryId);
       }
+      return newExpanded;
     });
-  };
+  }, []);
+
+  const isGalleryExpanded = useCallback((galleryId: string) => {
+    return expandedGalleries.has(galleryId);
+  }, [expandedGalleries]);
+
+  // Handle adding images from modal to selected gallery
+  const handleAddImages = useCallback((selectedImages: SelectedImageData[]) => {
+
+    if (selectedGalleryId && selectedImages.length > 0) {
+      // Convert SelectedImageData to ImageFile format
+      const imageFiles: ImageFile[] = selectedImages.map(img => ({
+        id: img.id,
+        name: img.name,
+        url: img.url
+      }));
+
+
+      setGalleries(prev => {
+        const updatedGalleries = prev.map(gallery => {
+          if (gallery.id === selectedGalleryId) {
+            // Get existing image IDs for faster lookup
+            const existingImageIds = new Set(gallery.images.map(img => img.id));
+            // Filter out duplicates
+            const newImages = imageFiles.filter(newImg => !existingImageIds.has(newImg.id));
+            return {
+              ...gallery,
+              images: [...gallery.images, ...newImages]
+            };
+          }
+          return gallery;
+        });
+
+        return updatedGalleries;
+      });
+
+      setSelectedGalleryId(null);
+    } else {
+      console.log('No gallery selected or no images to add');
+    }
+  }, [selectedGalleryId]);
+
 
   const renderTabContent = () => {
     switch (selectedTab) {
       case 0:
         return (
-          <Card>
-            <BlockStack gap="400">
-              <FormLayout>
-                <Text as="h3" variant="headingSm">
-                  Fonts
-                </Text>
+          <BlockStack gap="400">
+            <FormLayout>
+              <Banner tone="info">
+                Configured fonts are available for users to apply when adding text in the product designer.
+              </Banner>
 
-                <Banner tone="info">
-                  Configured fonts are available for users to apply when adding text in the product designer.
-                </Banner>
-
-                <BlockStack gap="300">
-                  <TextField
-                    label="Font Name"
-                    value={newFont.name}
-                    onChange={(value) => setNewFont(prev => ({ ...prev, name: value }))}
-                    placeholder="Enter font name"
-                    autoComplete="off"
-                  />
-                  <TextField
-                    label="Font URL (Optional)"
-                    value={newFont.url}
-                    onChange={(value) => setNewFont(prev => ({ ...prev, url: value }))}
-                    placeholder="https://fonts.googleapis.com/css2?family=FontName (leave empty for system font)"
-                    autoComplete="url"
-                    helpText="Optional: Provide a URL to load custom fonts, or leave empty to use system default fonts"
-                  />
-                  <InlineStack gap="200">
-                    {editingFont ? (
-                      <ButtonGroup>
-                        <Button
-                          onClick={handleUpdateFont}
-                          variant="secondary"
-                          disabled={!newFont.name.trim()}
-                        >
-                          Update Font
-                        </Button>
-                        <Button onClick={handleCancelEdit} variant="tertiary" >
-                          Cancel
-                        </Button>
-                      </ButtonGroup>
-                    ) : (
+              <BlockStack gap="300">
+                <Box
+                  background={editingFont ? "bg-fill-tertiary" : "bg-fill-transparent-active"}
+                  shadow={editingFont ? "200" : "0"}
+                  padding={"400"} borderRadius="200">
+                  <BlockStack gap="300">
+                    <TextField
+                      label="Font Name"
+                      value={newFont.name}
+                      onChange={(value) => setNewFont(prev => ({ ...prev, name: value }))}
+                      placeholder="Enter font name"
+                      autoComplete="off"
+                    />
+                    <TextField
+                      label="Font URL (Optional)"
+                      value={newFont.url}
+                      onChange={(value) => setNewFont(prev => ({ ...prev, url: value }))}
+                      placeholder="https://fonts.googleapis.com/css2?family=FontName (leave empty for system font)"
+                      autoComplete="url"
+                      helpText="Optional: Provide a URL to load custom fonts, or leave empty to use system default fonts"
+                    />
+                  </BlockStack>
+                </Box>
+                <InlineStack gap="200" align="end">
+                  {editingFont ? (
+                    <ButtonGroup>
+                      <Button onClick={handleCancelEdit} variant="tertiary" >
+                        Cancel
+                      </Button>
                       <Button
-                        onClick={handleAddFont}
+                        onClick={handleUpdateFont}
                         variant="secondary"
-                        icon={PlusIcon}
                         disabled={!newFont.name.trim()}
                       >
-                        Add Font
+                        Update Font
                       </Button>
-                    )}
-                  </InlineStack>
-                </BlockStack>
+                    </ButtonGroup>
+                  ) : (
+                    <Button
+                      onClick={handleAddFont}
+                      variant="secondary"
+                      icon={PlusIcon}
+                      disabled={!newFont.name.trim()}
+                    >
+                      Add Font
+                    </Button>
+                  )}
+                </InlineStack>
+              </BlockStack>
 
-                <Text as="h3" variant="headingSm">
-                  Added Fonts
-                </Text>
+              <Text as="h3" variant="headingSm">
+                Added Fonts
+              </Text>
 
-                <ResourceList
-                  resourceName={{ singular: 'font', plural: 'fonts' }}
-                  items={fonts}
-                  renderItem={(item) => {
-                    const { id, name, url } = item;
-                    return (
-                      <ResourceItem
-                        id={id}
-                        accessibilityLabel={`Font ${name}`}
-                        onClick={() => { }}
-                      >
-                        <BlockStack gap="200">
-                          <InlineStack align="space-between">
-                            <BlockStack gap="100">
-                              <Text as="span" variant="bodyMd" fontWeight="semibold">
-                                {name}
-                              </Text>
-                              <Text as="span" variant="bodySm" tone="subdued">
-                                {url || 'System default font'}
-                              </Text>
-                            </BlockStack>
-                            <ButtonGroup>
-                              <Button
-                                size="slim"
-                                onClick={() => handleEditFont(item)}
-                              >
-                                Edit
-                              </Button>
-                              <Button
-                                size="slim"
-                                variant="tertiary"
-                                tone="critical"
-                                onClick={() => handleDeleteFont(id)}
-                              >
-                                Delete
-                              </Button>
-                            </ButtonGroup>
-                          </InlineStack>
-                        </BlockStack>
-                      </ResourceItem>
-                    );
-                  }}
-                />
-              </FormLayout>
-            </BlockStack>
-          </Card>
+              <ResourceList
+                resourceName={{ singular: 'font', plural: 'fonts' }}
+                items={fonts}
+                renderItem={(item) => {
+                  const { id, name, url } = item;
+                  return (
+                    <ResourceItem
+                      id={id}
+                      accessibilityLabel={`Font ${name}`}
+                      onClick={() => { }}
+                    >
+                      <BlockStack gap="200">
+                        <InlineStack align="space-between">
+                          <BlockStack gap="100">
+                            <Text as="span" variant="bodyMd" fontWeight="semibold">
+                              {name}
+                            </Text>
+                            <Text as="span" variant="bodySm" tone="subdued">
+                              {url || 'System default font'}
+                            </Text>
+                          </BlockStack>
+                          <ButtonGroup>
+                            <Button
+                              size="slim"
+                              onClick={() => handleEditFont(item)}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              size="slim"
+                              variant="tertiary"
+                              tone="critical"
+                              onClick={() => handleDeleteFont(id)}
+                            >
+                              Delete
+                            </Button>
+                          </ButtonGroup>
+                        </InlineStack>
+                      </BlockStack>
+                    </ResourceItem>
+                  );
+                }}
+              />
+            </FormLayout>
+          </BlockStack>
         );
       case 1:
         return (
-          <Card>
-            <BlockStack gap="400">
-              <FormLayout>
-                <Text as="h3" variant="headingSm">
-                  Gallery Management
-                </Text>
+          <BlockStack gap="400">
+            <FormLayout>
+              <Banner tone="info">
+                Media gallery images can be applied by users when personalizing products.
+              </Banner>
 
-                <Banner tone="info">
-                  Media gallery images can be applied by users when personalizing products.
-                </Banner>
+              <BlockStack gap="300">
+                <TextField
+                  label="Gallery Name"
+                  value={newGalleryName}
+                  onChange={setNewGalleryName}
+                  placeholder="Enter gallery name"
+                  autoComplete="off"
+                />
+              </BlockStack>
 
+              <InlineStack gap="200">
+                <Button
+                  onClick={handleCreateGallery}
+                  variant="primary"
+                  icon={PlusIcon}
+                  disabled={!newGalleryName.trim()}
+                >
+                  Create Gallery
+                </Button>
+              </InlineStack>
+
+              {galleries.length > 0 ? (
                 <BlockStack gap="300">
-                  <TextField
-                    label="Gallery Name"
-                    value={newGalleryName}
-                    onChange={setNewGalleryName}
-                    placeholder="Enter gallery name"
-                    autoComplete="off"
-                  />
-                </BlockStack>
-
-                <InlineStack gap="200">
-                  <Button
-                    onClick={handleCreateGallery}
-                    variant="primary"
-                    icon={PlusIcon}
-                    disabled={!newGalleryName.trim()}
-                  >
-                    Create Gallery
-                  </Button>
-                </InlineStack>
-
-                <ResourceList
-                  resourceName={{ singular: 'gallery', plural: 'galleries' }}
-                  items={galleries}
-                  emptyState={
-                    <EmptyState
-                      heading="Create a gallery to get started"
-                      image="https://cdn.shopify.com/s/files/1/2376/3301/products/emptystate-files.png"
-                    >
-                      <p>
-                        You can use galleries to organize and manage your images for the product designer.
-                      </p>
-                    </EmptyState>
-                  }
-                  renderItem={(item) => {
+                  {galleries.map((item) => {
                     const { id, name, images } = item;
 
                     return (
-                      <ResourceItem
-                        id={id}
-                        accessibilityLabel={`Gallery ${name}`}
-                        onClick={() => { }}
-                      >
+                      <Card key={id} roundedAbove="sm">
                         <BlockStack gap="300">
                           <InlineStack align="space-between">
                             <BlockStack gap="100">
-                              <Text as="span" variant="bodyMd" fontWeight="semibold">
+                              <Text as="h2" variant="headingSm">
                                 {name}
                               </Text>
-                              <Text as="span" variant="bodySm" tone="subdued">
+                              <Text as="p" variant="bodyMd" tone="subdued">
                                 {images.length} image{images.length !== 1 ? 's' : ''}
                               </Text>
                             </BlockStack>
@@ -522,7 +497,7 @@ export default function ConfigurationPage() {
                                 onClick={() => handleShopifyGallerySelect(id)}
                                 icon={ImageAddIcon}
                               >
-                                Media
+                                Add Media
                               </Button>
                               <Button
                                 size="slim"
@@ -530,57 +505,106 @@ export default function ConfigurationPage() {
                                 tone="critical"
                                 onClick={() => handleDeleteGallery(id)}
                               >
-                                Delete
+                                Delete Gallery
                               </Button>
                             </ButtonGroup>
                           </InlineStack>
 
-                          {/* Image Thumbnails */}
                           {images.length > 0 && (
                             <BlockStack gap="200">
-                              <Text as="h4" variant="headingXs">
-                                Gallery Images
-                              </Text>
-                              <InlineStack gap="200" wrap={false}>
-                                {images.slice(0, 5).map((image) => (
-                                  <div key={image.id} style={{ position: 'relative', display: 'inline-block' }}>
-                                    <Thumbnail
-                                      source={image.url}
-                                      alt={image.name}
-                                      size="small"
-                                    />
-                                    <div style={{
-                                      position: 'absolute',
-                                      top: '-8px',
-                                      right: '-8px'
-                                    }}>
-                                      <Button
-                                        size="micro"
-                                        variant="tertiary"
-                                        tone="critical"
-                                        onClick={() => handleDeleteImage(id, image.id)}
-                                      >
-                                        ×
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ))}
-                                {images.length > 5 && (
-                                  <Text as="span" variant="bodySm" tone="subdued">
-                                    +{images.length - 5} more
-                                  </Text>
-                                )}
-                              </InlineStack>
+                              {(() => {
+                                const IMAGES_TO_SHOW = 10; // Show 10 images initially (2 rows of 5)
+                                const isExpanded = isGalleryExpanded(id);
+                                const imagesToDisplay = isExpanded ? images : images.slice(0, IMAGES_TO_SHOW);
+                                const remainingCount = images.length - IMAGES_TO_SHOW;
+
+                                return (
+                                  <>
+                                    <InlineGrid gap="300" columns={7}>
+                                      {imagesToDisplay.map((image) => (
+                                        <div key={image.id}>
+                                          <Box
+                                            borderRadius="100"
+                                            padding="400"
+                                            background="bg-fill-secondary"
+                                            position="relative"
+                                          >
+                                            <Thumbnail
+                                              source={image.url}
+                                              alt={image.name}
+                                              size="large"
+                                            />
+                                            <div style={{
+                                              position: 'absolute',
+                                              top: '2px',
+                                              right: '2px'
+                                            }}>
+                                              <Button
+                                                size="slim"
+                                                variant="tertiary"
+                                                tone="critical"
+                                                onClick={() => handleDeleteImage(id, image.id)}
+                                                icon={<Icon source={XIcon} tone="base" />}
+                                              />
+                                            </div>
+                                          </Box>
+                                        </div>
+                                      ))}
+                                    </InlineGrid>
+
+                                    {!isExpanded && remainingCount > 0 && (
+                                      <BlockStack gap="200">
+                                        <Text as="p" variant="bodySm" tone="subdued" alignment="center">
+                                          +{remainingCount} more image{remainingCount !== 1 ? 's' : ''}
+                                        </Text>
+                                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                          <Button
+                                            size="slim"
+                                            variant="tertiary"
+                                            onClick={() => toggleGalleryExpansion(id)}
+                                            icon={<Icon source={ChevronDownIcon} tone="base" />}
+                                          >
+                                            View All {images.length.toString()} Images
+                                          </Button>
+                                        </div>
+                                      </BlockStack>
+                                    )}
+
+                                    {isExpanded && images.length > IMAGES_TO_SHOW && (
+                                      <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                        <Button
+                                          size="slim"
+                                          variant="tertiary"
+                                          onClick={() => toggleGalleryExpansion(id)}
+                                          icon={<Icon source={ChevronUpIcon} tone="base" />}
+                                        >
+                                          Show Less
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </>
+                                );
+                              })()
+                              }
                             </BlockStack>
                           )}
                         </BlockStack>
-                      </ResourceItem>
+                      </Card>
                     );
-                  }}
-                />
-              </FormLayout>
-            </BlockStack>
-          </Card>
+                  })}
+                </BlockStack>
+              ) : (
+                <EmptyState
+                  heading="Create a gallery to get started"
+                  image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+                >
+                  <p>
+                    You can use galleries to organize and manage your images for the product designer.
+                  </p>
+                </EmptyState>
+              )}
+            </FormLayout>
+          </BlockStack>
         );
       default:
         return null;
@@ -589,7 +613,7 @@ export default function ConfigurationPage() {
 
   return (
     <Page>
-      <TitleBar title="Configuration">
+      <TitleBar title="Easy Product Designer">
         <button
           variant="primary"
           onClick={handleSaveConfiguration}
@@ -600,22 +624,25 @@ export default function ConfigurationPage() {
       </TitleBar>
       <Layout>
         <Layout.Section>
-          <BlockStack gap="500">
-            <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange}>
-              {renderTabContent()}
-            </Tabs>
-          </BlockStack>
+          <Card>
+            <BlockStack gap="500">
+              <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange}>
+                <Box padding={"400"}>
+                  {renderTabContent()}
+                </Box>
+              </Tabs>
+            </BlockStack>
+          </Card>
         </Layout.Section>
       </Layout>
-
       <ImageSelectionModal
         isOpen={isMediaModalOpen}
-        onClose={handleCloseMediaModal}
-        onAddImages={handleAddSelectedImages}
-        selectedImages={selectedImages}
-        onImageSelection={handleImageSelection}
-        fetcher={fetcher}
-        isLoading={isLoadingMedia}
+        isGrid={true}
+        onClose={() => {
+          setIsMediaModalOpen(false);
+          setSelectedGalleryId(null);
+        }}
+        onAddImages={handleAddImages}
       />
     </Page>
   );

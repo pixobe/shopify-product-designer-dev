@@ -1,69 +1,143 @@
-
+import { useFetcher } from "@remix-run/react";
 import {
-    Card,
     Text,
     BlockStack,
-    EmptyState,
-    Thumbnail,
     Modal,
-    Grid,
-    Spinner,
-    Checkbox,
     TextField,
-    Button,
-    InlineStack,
-    DropZone,
+    Spinner,
+    InlineGrid,
+    Thumbnail,
+    ResourceList,
+    Card,
+    ResourceItem,
+    Box,
+    Checkbox,
+    Icon
 } from "@shopify/polaris";
-import { useState } from "react";
+import { SearchIcon } from "@shopify/polaris-icons";
+import { useEffect, useState, useCallback } from "react";
 
-interface ShopifyFile {
+export type ShopifyImage = {
     id: string;
-    alt?: string;
-    createdAt?: string;
-    updatedAt?: string;
-    fileStatus?: string;
-    image?: {
-        url?: string;
-        width?: number;
-        height?: number;
+    alt: string;
+    mimeType: string;
+    image: {
+        url: string;
+        width: number;
+        height: number;
     };
-}
+};
 
 interface ShopifyFilesResponse {
     success: boolean;
-    files: ShopifyFile[];
+    result: ShopifyImage[];
     error?: string;
+    hasMore?: boolean;
+    total?: number;
 }
 
-interface FetcherData {
-    data?: ShopifyFilesResponse;
-    state: string;
+export interface SelectedImageData {
+    id: string;
+    name: string;
+    url: string;
+    source: 'shopify';
 }
 
 interface ImageModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAddImages: () => void;
-    selectedImages: string[];
-    onImageSelection: (imageId: string, isSelected: boolean) => void;
-    fetcher: FetcherData;
-    isLoading: boolean;
+    isGrid: boolean;
+    onAddImages?: (imageData: SelectedImageData[]) => void;
 }
 
 export function ImageSelectionModal({
     isOpen,
+    isGrid,
     onClose,
-    onAddImages,
-    selectedImages,
-    onImageSelection,
-    fetcher,
-    isLoading
+    onAddImages
 }: ImageModalProps) {
-    const [searchQuery, setSearchQuery] = useState("");
-    const [files, setFiles] = useState<File[]>([]);
+    const fetcher = useFetcher<ShopifyFilesResponse>();
+    const [hasLoaded, setHasLoaded] = useState(false);
+    const [selectedImages, setSelectedImages] = useState<string[]>([]);
+    const [searchValue, setSearchValue] = useState("");
+    const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
-    const handleDropZoneDrop = (droppedFiles: File[]) => {
-        setFiles(droppedFiles);
+    const performSearch = useCallback((query: string) => {
+        const searchUrl = query.trim()
+            ? `/api/media?q=${encodeURIComponent(query)}&limit=250`
+            : "/api/media?limit=250";
+        fetcher.load(searchUrl);
+    }, [fetcher]);
+
+    useEffect(() => {
+        if (isOpen && !hasLoaded && fetcher.state === "idle") {
+            // Fetch more images by default (250 instead of 100)
+            performSearch("");
+            setHasLoaded(true);
+        }
+    }, [isOpen, hasLoaded, fetcher, performSearch]);
+
+    // Reset when modal closes
+    useEffect(() => {
+        if (!isOpen) {
+            setHasLoaded(false);
+            setSelectedImages([]);
+            setSearchValue("");
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+                setSearchTimeout(null);
+            }
+        }
+    }, [isOpen, searchTimeout]);
+
+    // Handle search with debounce
+    const handleSearchChange = useCallback((value: string) => {
+        setSearchValue(value);
+
+        // Clear existing timeout
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+
+        // Set new timeout for debounced search
+        const newTimeout = setTimeout(() => {
+            performSearch(value);
+        }, 500);
+
+        setSearchTimeout(newTimeout);
+    }, [searchTimeout, performSearch]);
+
+    const handleImageClick = (imageId: string, checked: boolean) => {
+        setSelectedImages(prev => {
+            if (!checked) {
+                // Remove from selection
+                return prev.filter(id => id !== imageId);
+            } else {
+                // Add to selection
+                return [...prev, imageId];
+            }
+        });
+    };
+
+    const handleAddSelectedImages = () => {
+        console.log('handleAddSelectedImages called with:', selectedImages.length, 'selected images');
+
+        if (onAddImages && fetcher.data?.result) {
+            const selectedImageData: SelectedImageData[] = fetcher.data.result
+                .filter(image => selectedImages.includes(image.id))
+                .map(image => ({
+                    id: image.id,
+                    name: image.alt || 'Untitled',
+                    url: image.image.url,
+                    source: 'shopify' as const
+                }));
+
+            console.log('Sending image data to parent:', selectedImageData);
+            onAddImages(selectedImageData);
+            onClose();
+        } else {
+            console.log('No onAddImages callback or no data available');
+        }
     };
 
     return (
@@ -71,9 +145,10 @@ export function ImageSelectionModal({
             open={isOpen}
             onClose={onClose}
             title="Select Images from Shopify Media"
+            size="fullScreen"
             primaryAction={{
                 content: `Add ${selectedImages.length} Selected Image${selectedImages.length !== 1 ? 's' : ''}`,
-                onAction: onAddImages,
+                onAction: handleAddSelectedImages,
                 disabled: selectedImages.length === 0
             }}
             secondaryActions={[{
@@ -82,112 +157,119 @@ export function ImageSelectionModal({
             }]}
         >
             <Modal.Section>
-                <BlockStack gap="400">
+                <BlockStack gap="100">
                     <TextField
                         label="Search files"
-                        value={searchQuery}
-                        onChange={setSearchQuery}
-                        placeholder="Search files"
+                        placeholder="Search files by name..."
                         autoComplete="off"
-                        prefix={<Text as="span">🔍</Text>}
+                        value={searchValue}
+                        onChange={handleSearchChange}
+                        prefix={<Icon source={SearchIcon} tone="base" />}
+                        clearButton
+                        onClearButtonClick={() => handleSearchChange("")}
                     />
 
-                    <DropZone onDrop={handleDropZoneDrop}>
-                        <DropZone.FileUpload />
-                    </DropZone>
-                </BlockStack>
+                    {fetcher.state === 'loading' ? (
+                        <BlockStack gap="400" align="center" inlineAlign="center">
+                            <Spinner size="large" />
+                            <Text as="p" alignment="center">
+                                Loading Shopify media files...
+                            </Text>
+                        </BlockStack>
+                    ) : fetcher.data?.result ? (
+                        <>
+                            <Text as="p" variant="bodySm" tone="subdued">
+                                {searchValue ? (
+                                    `${fetcher.data.result.length} images found for "${searchValue}"`
+                                ) : (
+                                    `${fetcher.data.result.length} images available`
+                                )}{fetcher.data.hasMore ? ' (more available)' : ''}
+                            </Text>
+                            {isGrid ? (
+                                <Card>
+                                    <InlineGrid gap="300" columns={5}>
+                                        {fetcher.data.result.map((item) => {
+                                            const { id, image, alt } = item;
+                                            const isSelected = selectedImages.includes(item.id);
 
-                {isLoading || fetcher.state === 'loading' ? (
-                    <BlockStack gap="400" align="center" inlineAlign="center">
-                        <Spinner size="large" />
-                        <Text as="p" alignment="center">
-                            Loading Shopify media files...
-                        </Text>
-                    </BlockStack>
-                ) : fetcher.data?.files ? (
-                    <BlockStack gap="400">
-
-                        {fetcher.data.files.filter((file: ShopifyFile) => file.image?.url).length === 0 ? (
-                            <EmptyState
-                                heading="No images found"
-                                image="https://cdn.shopify.com/s/files/1/2376/3301/products/emptystate-files.png"
-                            >
-                                <p>No image files were found in your Shopify media library.</p>
-                            </EmptyState>
-                        ) : (
-                            <Grid gap="300">
-                                {fetcher.data.files
-                                    .filter((file: ShopifyFile) => file.image?.url)
-                                    .map((file: ShopifyFile) => {
-                                        const imageId = `shopify-${file.id}`;
-                                        const isSelected = selectedImages.includes(imageId);
-                                        const imageUrl = file.image?.url;
-                                        const imageName = file.alt || imageUrl?.split('/').pop() || 'Shopify Image';
-
-                                        return (
-                                            <Grid.Cell
-                                                key={file.id}
-                                                columnSpan={{ xs: 6, sm: 4, md: 3, lg: 2, xl: 2 }}
-                                            >
-                                                <BlockStack gap="100">
-                                                    <div
-                                                        style={{
-                                                            position: 'relative',
-                                                            cursor: 'pointer',
-                                                            border: isSelected ? '3px solid #008060' : '1px solid #e1e3e5',
-                                                            borderRadius: '8px',
-                                                            overflow: 'hidden',
-                                                            backgroundColor: isSelected ? '#f0f9f6' : 'transparent'
-                                                        }}
-                                                        onClick={() => onImageSelection(imageId, !isSelected)}
+                                            return (
+                                                <div
+                                                    key={id}
+                                                    style={{ cursor: 'pointer' }}
+                                                    onClick={() => handleImageClick(item.id, !isSelected)}
+                                                >
+                                                    <Box
+                                                        borderRadius="100"
+                                                        padding="400"
+                                                        background={isSelected ? "bg-fill-tertiary" : "bg-fill-secondary"}
+                                                        position="relative"
                                                     >
                                                         <Thumbnail
-                                                            source={imageUrl || ''}
-                                                            alt={imageName}
+                                                            source={image.url}
                                                             size="large"
+                                                            alt={alt || "Image"}
                                                         />
+
                                                         <div style={{
                                                             position: 'absolute',
-                                                            top: '6px',
-                                                            right: '6px',
-                                                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                                            borderRadius: '4px',
-                                                            padding: '2px'
+                                                            top: '2px',
+                                                            left: '2px',
                                                         }}>
                                                             <Checkbox
-                                                                label={`Select ${imageName}`}
-                                                                labelHidden
+                                                                label=""
                                                                 checked={isSelected}
-                                                                onChange={(checked) => onImageSelection(imageId, checked)}
+                                                                onChange={(checked) => {
+                                                                    handleImageClick(item.id, checked);
+                                                                }}
                                                             />
                                                         </div>
-                                                    </div>
-                                                    <Text as="p" variant="bodySm" truncate alignment="center">
-                                                        {imageName}
-                                                    </Text>
-                                                    <Text as="p" variant="captionMd" tone="subdued" alignment="center">
-                                                        {file.image?.url?.includes('.png') ? 'PNG' :
-                                                            file.image?.url?.includes('.jpg') ? 'JPG' :
-                                                                file.image?.url?.includes('.jpeg') ? 'JPEG' :
-                                                                    file.image?.url?.includes('.webp') ? 'WEBP' : 'IMAGE'}
-                                                    </Text>
-                                                </BlockStack>
-                                            </Grid.Cell>
+                                                    </Box>
+                                                </div>
+                                            );
+                                        })}
+                                    </InlineGrid>
+                                </Card>
+                            ) : (
+                                <ResourceList
+                                    resourceName={{ singular: 'image', plural: 'images' }}
+                                    items={fetcher.data.result}
+                                    renderItem={(item) => {
+                                        const { id, image, alt } = item;
+                                        const isSelected = selectedImages.includes(id);
+                                        const media = (
+                                            <Thumbnail
+                                                source={image.url}
+                                                size="large"
+                                                alt={alt || "Image"}
+                                            />
                                         );
-                                    })
-                                }
-                            </Grid>
-                        )}
-                    </BlockStack>
-                ) : (
-                    <EmptyState
-                        heading="Failed to load media"
-                        image="https://cdn.shopify.com/s/files/1/2376/3301/products/emptystate-files.png"
-                    >
-                        <p>There was an error loading your Shopify media files. Please try again.</p>
-                    </EmptyState>
-                )}
+
+                                        return (
+                                            <ResourceItem
+                                                onClick={() => handleImageClick(id, !isSelected)}
+                                                id={id}
+                                                media={media}
+                                                accessibilityLabel={`${isSelected ? 'Deselect' : 'Select'} ${alt || "image"}`}
+                                                shortcutActions={isSelected ? [{ content: '✓ Selected', onAction: () => { } }] : []}
+                                            >
+                                                {alt || "No description"}
+                                            </ResourceItem>
+                                        );
+                                    }}
+                                />
+                            )}
+                        </>
+                    ) : fetcher.data?.error ? (
+                        <Text as="p" alignment="center">
+                            {fetcher.data.error}
+                        </Text>
+                    ) : (
+                        <Text as="p" alignment="center">
+                            No media files found.
+                        </Text>
+                    )}
+                </BlockStack>
             </Modal.Section>
         </Modal>
-    )
+    );
 }
