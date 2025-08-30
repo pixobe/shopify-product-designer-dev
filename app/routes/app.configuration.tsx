@@ -352,6 +352,10 @@ export default function ConfigurationPage() {
                   Fonts
                 </Text>
 
+                <Banner tone="info">
+                  Configured fonts are available for users to apply when adding text in the product designer.
+                </Banner>
+
                 <BlockStack gap="300">
                   <TextField
                     label="Font Name"
@@ -456,7 +460,7 @@ export default function ConfigurationPage() {
                 </Text>
 
                 <Banner tone="info">
-                  Create galleries to organize images for your product designer. You can upload new images or select existing ones from your Shopify media gallery.
+                  Media gallery images can be applied by users when personalizing products.
                 </Banner>
 
                 <BlockStack gap="300">

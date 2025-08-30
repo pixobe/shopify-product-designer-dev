@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { useFetcher } from "@remix-run/react";
 import {
@@ -9,9 +9,9 @@ import {
   Button,
   BlockStack,
   Box,
-  List,
   Link,
   InlineStack,
+  TextField,
 } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -93,6 +93,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function Index() {
   const fetcher = useFetcher<typeof action>();
+  const [productSearchTerm, setProductSearchTerm] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
 
   const shopify = useAppBridge();
   const isLoading =
@@ -108,23 +110,35 @@ export default function Index() {
       shopify.toast.show("Product created");
     }
   }, [productId, shopify]);
+
   const generateProduct = () => fetcher.submit({}, { method: "POST" });
+
+  const handleProductSearch = () => {
+    if (!productSearchTerm.trim()) {
+      shopify.toast.show("Please enter a product name to search", { isError: true });
+      return;
+    }
+
+    setIsSearching(true);
+    // Here you would implement the actual product search logic
+    // For now, we'll just simulate a search
+    setTimeout(() => {
+      setIsSearching(false);
+      shopify.toast.show(`Searching for products containing: ${productSearchTerm}`);
+    }, 1000);
+  };
 
   return (
     <Page>
-      <TitleBar title="Remix app template">
-        <button variant="primary" onClick={generateProduct}>
-          Generate a product
-        </button>
-      </TitleBar>
+      <TitleBar title="Remix app template" />
       <BlockStack gap="500">
         <Layout>
           <Layout.Section>
             <Card>
               <BlockStack gap="500">
                 <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    Congrats on creating a new Shopify app 🎉
+                  <Text as="h3" variant="headingMd">
+                    Get started with product designer
                   </Text>
                   <Text variant="bodyMd" as="p">
                     This embedded app template uses{" "}
@@ -151,36 +165,10 @@ export default function Index() {
                     development.
                   </Text>
                 </BlockStack>
-                <BlockStack gap="200">
-                  <Text as="h3" variant="headingMd">
-                    Get started with products
-                  </Text>
-                  <Text as="p" variant="bodyMd">
-                    Generate a product with GraphQL and get the JSON output for
-                    that product. Learn more about the{" "}
-                    <Link
-                      url="https://shopify.dev/docs/api/admin-graphql/latest/mutations/productCreate"
-                      target="_blank"
-                      removeUnderline
-                    >
-                      productCreate
-                    </Link>{" "}
-                    mutation in our API references.
-                  </Text>
-                </BlockStack>
                 <InlineStack gap="300">
                   <Button loading={isLoading} onClick={generateProduct}>
-                    Generate a product
+                    Enable App Embed
                   </Button>
-                  {fetcher.data?.product && (
-                    <Button
-                      url={`shopify:admin/products/${productId}`}
-                      target="_blank"
-                      variant="plain"
-                    >
-                      View product
-                    </Button>
-                  )}
                 </InlineStack>
                 {fetcher.data?.product && (
                   <>
@@ -225,108 +213,41 @@ export default function Index() {
               </BlockStack>
             </Card>
           </Layout.Section>
-          <Layout.Section variant="oneThird">
-            <BlockStack gap="500">
-              <Card>
+
+          <Layout.Section>
+            <Card>
+              <BlockStack gap="500">
                 <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    App template specs
+                  <Text as="h3" variant="headingMd">
+                    Enable Product Designer
                   </Text>
-                  <BlockStack gap="200">
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Framework
-                      </Text>
-                      <Link
-                        url="https://remix.run"
-                        target="_blank"
-                        removeUnderline
-                      >
-                        Remix
-                      </Link>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Database
-                      </Text>
-                      <Link
-                        url="https://www.prisma.io/"
-                        target="_blank"
-                        removeUnderline
-                      >
-                        Prisma
-                      </Link>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Interface
-                      </Text>
-                      <span>
-                        <Link
-                          url="https://polaris.shopify.com"
-                          target="_blank"
-                          removeUnderline
-                        >
-                          Polaris
-                        </Link>
-                        {", "}
-                        <Link
-                          url="https://shopify.dev/docs/apps/tools/app-bridge"
-                          target="_blank"
-                          removeUnderline
-                        >
-                          App Bridge
-                        </Link>
-                      </span>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        API
-                      </Text>
-                      <Link
-                        url="https://shopify.dev/docs/api/admin-graphql"
-                        target="_blank"
-                        removeUnderline
-                      >
-                        GraphQL API
-                      </Link>
-                    </InlineStack>
-                  </BlockStack>
-                </BlockStack>
-              </Card>
-              <Card>
-                <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    Next steps
+                  <Text variant="bodyMd" as="p">
+                    By default customization is not enabled for a product, search and enable customization for a product.
                   </Text>
-                  <List>
-                    <List.Item>
-                      Build an{" "}
-                      <Link
-                        url="https://shopify.dev/docs/apps/getting-started/build-app-example"
-                        target="_blank"
-                        removeUnderline
-                      >
-                        {" "}
-                        example app
-                      </Link>{" "}
-                      to get started
-                    </List.Item>
-                    <List.Item>
-                      Explore Shopify’s API with{" "}
-                      <Link
-                        url="https://shopify.dev/docs/apps/tools/graphiql-admin-api"
-                        target="_blank"
-                        removeUnderline
-                      >
-                        GraphiQL
-                      </Link>
-                    </List.Item>
-                  </List>
                 </BlockStack>
-              </Card>
-            </BlockStack>
+                <BlockStack gap="300">
+                  <TextField
+                    label="Search Products"
+                    value={productSearchTerm}
+                    onChange={setProductSearchTerm}
+                    placeholder="Enter product name to search..."
+                    autoComplete="off"
+                  />
+                  <InlineStack gap="300">
+                    <Button
+                      onClick={handleProductSearch}
+                      loading={isSearching}
+                      variant="primary"
+                      disabled={!productSearchTerm.trim()}
+                    >
+                      {isSearching ? 'Searching...' : 'Search Products'}
+                    </Button>
+                  </InlineStack>
+                </BlockStack>
+              </BlockStack>
+            </Card>
           </Layout.Section>
+
         </Layout>
       </BlockStack>
     </Page>

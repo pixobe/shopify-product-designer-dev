@@ -1,0 +1,4 @@
+{
+  "name": "admin-block-extn",
+  "welcome": "Bienvenue dans l'extension {{target}}!"
+}

@@ -9,7 +9,12 @@ import {
     Grid,
     Spinner,
     Checkbox,
+    TextField,
+    Button,
+    InlineStack,
+    DropZone,
 } from "@shopify/polaris";
+import { useState } from "react";
 
 interface ShopifyFile {
     id: string;
@@ -54,6 +59,13 @@ export function ImageSelectionModal({
     fetcher,
     isLoading
 }: ImageModalProps) {
+    const [searchQuery, setSearchQuery] = useState("");
+    const [files, setFiles] = useState<File[]>([]);
+
+    const handleDropZoneDrop = (droppedFiles: File[]) => {
+        setFiles(droppedFiles);
+    };
+
     return (
         <Modal
             open={isOpen}
@@ -70,6 +82,21 @@ export function ImageSelectionModal({
             }]}
         >
             <Modal.Section>
+                <BlockStack gap="400">
+                    <TextField
+                        label="Search files"
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                        placeholder="Search files"
+                        autoComplete="off"
+                        prefix={<Text as="span">🔍</Text>}
+                    />
+
+                    <DropZone onDrop={handleDropZoneDrop}>
+                        <DropZone.FileUpload />
+                    </DropZone>
+                </BlockStack>
+
                 {isLoading || fetcher.state === 'loading' ? (
                     <BlockStack gap="400" align="center" inlineAlign="center">
                         <Spinner size="large" />
@@ -79,9 +106,6 @@ export function ImageSelectionModal({
                     </BlockStack>
                 ) : fetcher.data?.files ? (
                     <BlockStack gap="400">
-                        <Text as="p" tone="subdued">
-                            Select the images you want to add to your gallery. Click on images to select them.
-                        </Text>
 
                         {fetcher.data.files.filter((file: ShopifyFile) => file.image?.url).length === 0 ? (
                             <EmptyState
@@ -91,7 +115,7 @@ export function ImageSelectionModal({
                                 <p>No image files were found in your Shopify media library.</p>
                             </EmptyState>
                         ) : (
-                            <Grid>
+                            <Grid gap="300">
                                 {fetcher.data.files
                                     .filter((file: ShopifyFile) => file.image?.url)
                                     .map((file: ShopifyFile) => {
@@ -105,40 +129,49 @@ export function ImageSelectionModal({
                                                 key={file.id}
                                                 columnSpan={{ xs: 6, sm: 4, md: 3, lg: 2, xl: 2 }}
                                             >
-                                                <Card>
-                                                    <BlockStack gap="200">
-                                                        <div
-                                                            style={{
-                                                                position: 'relative',
-                                                                cursor: 'pointer',
-                                                                border: isSelected ? '2px solid #008060' : '2px solid transparent',
-                                                                borderRadius: '4px'
-                                                            }}
-                                                            onClick={() => onImageSelection(imageId, !isSelected)}
-                                                        >
-                                                            <Thumbnail
-                                                                source={imageUrl || ''}
-                                                                alt={imageName}
-                                                                size="large"
+                                                <BlockStack gap="100">
+                                                    <div
+                                                        style={{
+                                                            position: 'relative',
+                                                            cursor: 'pointer',
+                                                            border: isSelected ? '3px solid #008060' : '1px solid #e1e3e5',
+                                                            borderRadius: '8px',
+                                                            overflow: 'hidden',
+                                                            backgroundColor: isSelected ? '#f0f9f6' : 'transparent'
+                                                        }}
+                                                        onClick={() => onImageSelection(imageId, !isSelected)}
+                                                    >
+                                                        <Thumbnail
+                                                            source={imageUrl || ''}
+                                                            alt={imageName}
+                                                            size="large"
+                                                        />
+                                                        <div style={{
+                                                            position: 'absolute',
+                                                            top: '6px',
+                                                            right: '6px',
+                                                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                                            borderRadius: '4px',
+                                                            padding: '2px'
+                                                        }}>
+                                                            <Checkbox
+                                                                label={`Select ${imageName}`}
+                                                                labelHidden
+                                                                checked={isSelected}
+                                                                onChange={(checked) => onImageSelection(imageId, checked)}
                                                             />
-                                                            <div style={{
-                                                                position: 'absolute',
-                                                                top: '8px',
-                                                                right: '8px'
-                                                            }}>
-                                                                <Checkbox
-                                                                    label={`Select ${imageName}`}
-                                                                    labelHidden
-                                                                    checked={isSelected}
-                                                                    onChange={(checked) => onImageSelection(imageId, checked)}
-                                                                />
-                                                            </div>
                                                         </div>
-                                                        <Text as="p" variant="bodySm" truncate>
-                                                            {imageName}
-                                                        </Text>
-                                                    </BlockStack>
-                                                </Card>
+                                                    </div>
+                                                    <Text as="p" variant="bodySm" truncate alignment="center">
+                                                        {imageName}
+                                                    </Text>
+                                                    <Text as="p" variant="captionMd" tone="subdued" alignment="center">
+                                                        {file.image?.url?.includes('.png') ? 'PNG' :
+                                                            file.image?.url?.includes('.jpg') ? 'JPG' :
+                                                                file.image?.url?.includes('.jpeg') ? 'JPEG' :
+                                                                    file.image?.url?.includes('.webp') ? 'WEBP' : 'IMAGE'}
+                                                    </Text>
+                                                </BlockStack>
                                             </Grid.Cell>
                                         );
                                     })

@@ -42,3 +42,42 @@ export async function getProductDetails(client: any, productId: string) {
     },
   );
 }
+
+export async function searchProductsByName(
+  client: any,
+  searchQuery: string,
+  first: number = 10,
+) {
+  return client.graphql(
+    `#graphql
+      query SearchProducts($query: String!, $first: Int!) {
+        products(query: $query, first: $first) {
+          edges {
+            node {
+              id
+              title
+              handle
+              status
+              createdAt
+              updatedAt
+              featuredImage {
+                url
+                altText
+              }
+            }
+          }
+          pageInfo {
+            hasNextPage
+            hasPreviousPage
+          }
+        }
+      }
+    `,
+    {
+      variables: {
+        query: `title:*${searchQuery}*`,
+        first: first,
+      },
+    },
+  );
+}
