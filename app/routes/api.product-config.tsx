@@ -1,6 +1,6 @@
 import type { LoaderFunction } from "@remix-run/node";
 import { unauthenticated } from "../shopify.server";
-import { getProductImageQuery } from "app/utils/graphql/product";
+import { getProductWithVariants } from "app/utils/graphql/product";
 
 export const loader: LoaderFunction = async ({ request }) => {
 
@@ -21,7 +21,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     return Response.json({ message: "ProductID missing", success: false }, { status: 400 });
   }
 
-  const productImageResponse = await getProductImageQuery(storefront, productId);
+  const productImageResponse = await getProductWithVariants(storefront, productId);
   const productImages = await productImageResponse.json();
 
   if (!productImages.data || !productImages.data.product) {
@@ -30,6 +30,10 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   const product = productImages.data.product;
 
+  // Get the first variant ID
+  const firstVariant = product.variants?.edges?.[0]?.node;
+  const variantId = firstVariant ? firstVariant.id.replace('gid://shopify/ProductVariant/', '') : null;
+
   const mediaItems: Array<any> = product.media.edges.map((edge: any) => ({
     src: edge.node.image.url,
     stroke: "",
@@ -37,6 +41,8 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   const meta = {
     name: product.title,
+    variantId: variantId,
+    productId: productId
   }
 
   return Response.json({

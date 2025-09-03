@@ -1,3 +1,37 @@
+export async function getProductWithVariants(client: any, productId: string) {
+  return client.graphql(
+    `#graphql
+        query ProductWithVariants($productId: ID!) {
+        product(id: $productId) {
+            id
+            title
+            variants(first: 1) {
+              edges {
+                node {
+                  id
+                }
+              }
+            }
+            media(first: 5) {
+            edges {
+                node {
+                ... on MediaImage {
+                    image {
+                    url
+                    }
+                }
+                }
+            }
+            }
+        }
+        }
+    `,
+    {
+      variables: { productId: `gid://shopify/Product/${productId}` },
+    },
+  );
+}
+
 export async function getProductImageQuery(client: any, productId: string) {
   return client.graphql(
     `#graphql
