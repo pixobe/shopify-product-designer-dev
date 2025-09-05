@@ -121,25 +121,47 @@ class PixobeCustomizeButton extends HTMLElement {
     productDesigner.media = data.result.media || [];
     productDesigner.meta = data.result.meta || {};
 
+    const spinner = document.createElement("pixobes-spinner");
+
     // Set up cart listener
-    productDesigner.addEventListener("cart", () =>
-      this.handleAddToCart(this.variantId, 1),
-    );
+    productDesigner.addEventListener("cart", async (e) => {
+      const config = e.detail;
+      const id = this.variantId || this.productId;
+      modal.appendChild(spinner);
+      await this.handleAddToCart(id, 1, config);
+      window.location.reload();
+    });
 
     modal.replaceChildren(productDesigner);
   }
 
-  async handleAddToCart(variantId, quantity = 1) {
-    if (!variantId) {
-      console.error("No variant ID available for add to cart");
+  async handleAddToCart(id, quantity = 1, config) {
+    if (!id) {
+      console.error("Product or Variant ID not available for add to cart");
       return;
     }
+
+    const data = {
+      items: [
+        {
+          id,
+          quantity,
+          properties: {
+            _pixobe_custom_data: config,
+            Customize: "true",
+          },
+        },
+      ],
+    };
 
     try {
       const res = await fetch(window.Shopify.routes.root + "cart/add.js", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: [{ id: variantId, quantity }] }),
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(data),
       });
 
       if (!res.ok) {
@@ -148,8 +170,9 @@ class PixobeCustomizeButton extends HTMLElement {
         const serverMessage = data?.description || res.statusText;
         throw new Error(`Add to cart failed: ${serverMessage}`);
       }
+      const result = await res.json();
 
-      return res.json();
+      return result;
     } catch (err) {
       console.error("Add to cart failed:", err);
       // It might be helpful to throw here so the original caller can handle it

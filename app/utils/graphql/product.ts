@@ -134,8 +134,6 @@ export async function getProductDetails(
     ? createShopifyGid("ProductVariant", variantId)
     : createShopifyGid("Product", productId);
 
-  console.log("******************************", query, id);
-
   try {
     const response = await client.graphql(query, {
       variables: { id },
@@ -143,9 +141,7 @@ export async function getProductDetails(
 
     // Call the extraction helper
     const responseData = await response.json();
-    console.log("Respnose data******************************", responseData);
     const extractedData = extractProductInfo(responseData);
-
     // Explicitly handle the null case returned by the helper
     if (extractedData === null) {
       throw new Error("G002:Failed to get product data.");
