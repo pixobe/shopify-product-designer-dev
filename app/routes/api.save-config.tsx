@@ -8,11 +8,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     try {
         const configData = await request.json();
 
-        console.log("Save configuration triggered:", {
-            fonts: configData.fonts?.length || 0,
-            galleries: configData.galleries?.length || 0
-        });
-
         // First get the shop ID
         const shopResponse = await admin.graphql(`
             query getCurrentShop {

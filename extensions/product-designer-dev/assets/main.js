@@ -1,9 +1,3 @@
-/**
- *
- * @name: PixobeCustomizeButton Web Component
- */
-
-// PixobeCustomizeButton Web Component
 class PixobeCustomizeButton extends HTMLElement {
   constructor() {
     super();
@@ -11,19 +5,25 @@ class PixobeCustomizeButton extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ["label", "variant", "position", "product-id"];
+    return ["label", "variant-id", "position", "product-id"];
   }
 
   connectedCallback() {
     if (!this.isInitialized) {
       this.render();
-      this.setupEventListeners();
+      this.setupButton();
       this.isInitialized = true;
     }
+
+    // Register with global listener manager
+  }
+
+  disconnectedCallback() {
+    this.isInitialized = false;
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    if (oldValue !== newValue && this.isInitialized) {
+    if (oldValue !== newValue && name === "label") {
       this.render();
     }
   }
@@ -32,12 +32,15 @@ class PixobeCustomizeButton extends HTMLElement {
     return this.getAttribute("label") || "Customize";
   }
 
-  get variant() {
-    return this.getAttribute("variant") || "primary";
-  }
-
-  get position() {
-    return this.getAttribute("position") || "default";
+  get variantId() {
+    const cartForm = document.querySelector('form[action="/cart/add"]');
+    if (cartForm) {
+      const variantId = cartForm.querySelector('input[name="id"]').value;
+      if (variantId) {
+        return variantId;
+      }
+    }
+    return this.getAttribute("variant-id") || "";
   }
 
   get productId() {
@@ -45,154 +48,128 @@ class PixobeCustomizeButton extends HTMLElement {
   }
 
   render() {
-    const buttonHTML = `
-      <button class="button button--full-width button--secondary" type="button">
-        ${this.label}
-      </button>
-    `;
-
-    this.innerHTML = buttonHTML;
+    this.innerHTML = `<button class="button button--full-width button--secondary" type="button">${this.label}</button>`;
   }
 
-  setupEventListeners() {
+  setupButton() {
     const button = this.querySelector(".button");
+    if (!button) return;
 
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
+    button.addEventListener("click", (e) => {
+      e.preventDefault();
       this.handleOnClick();
     });
   }
 
-  handleOnClick() {
-    // Add loading state
+  async handleOnClick() {
     const button = this.querySelector(".button");
-    button.classList.add("loading");
+    if (!button) return;
+
     button.disabled = true;
+    button.classList.add("loading");
 
     const modal = document.getElementById("pixobe-customize-modal");
-    modal.open = true;
+    if (modal) {
+      modal.open = true;
+      modal.replaceChildren(); // Clear modal content for loading state
+    }
 
-    // Make GET call to product-config endpoint
-    this.fetchProductConfig()
-      .then((data) => {
-        // Handle successful response
-        this.handleConfigSuccess(data);
-      })
-      .catch((error) => {
-        this.handleConfigError(error);
-      })
-      .finally(() => {
-        // Remove loading state
-        button.classList.remove("loading");
-        button.disabled = false;
-      });
+    try {
+      const data = await this.fetchProductConfig();
+      this.handleConfigSuccess(data);
+    } catch (err) {
+      this.handleConfigError(err);
+    } finally {
+      button.disabled = false;
+      button.classList.remove("loading");
+    }
   }
 
   async fetchProductConfig() {
-    const productId = this.productId;
-    const url = `/apps/pixobe-product-designer/product-config?productId=${productId}`;
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // if both not found throw an error
+    if (!this.productId && !this.variantId) {
+      throw new Error("No product or variant ID available");
     }
 
-    const data = await response.json();
+    const res = await fetch(
+      `/apps/pixobe-product-designer/product-config?productId=${this.productId}&variantId=${this.variantId}`,
+    );
+
+    // Attempt to parse the response as JSON even if it's not "ok"
+    const data = await res.json();
+
+    // Check if the response was not OK (status 400-599)
+    if (!res.ok) {
+      // Use the error message from the server response if available
+      const serverMessage = data?.message || res.statusText;
+      throw new Error(`Error ${res.status}: ${serverMessage}`);
+    }
+
     return data;
   }
 
   handleConfigSuccess(data) {
     const modal = document.getElementById("pixobe-customize-modal");
-    if (data.success && data.result) {
-      const productDesigner = document.createElement("product-designer");
-      // Set config, media, and meta to the element
-      productDesigner.config = data.result.config || {};
-      productDesigner.media = data.result.media || [];
-      productDesigner.meta = data.result.meta || {};
-
-      // Store the variant ID for cart operations
-      this.variantId = data.result.meta?.variantId;
-
-      this.productDesignerElement = productDesigner;
-      productDesigner.addEventListener(
-        "cart",
-        this.onCustomizeEvent.bind(this),
-      );
-      // Query for the modal and attach the element
-      modal.replaceChildren(productDesigner);
+    if (!modal || !data.success || !data.result) {
+      // Handle a malformed success response as an error
+      this.handleConfigError(new Error("Unexpected response from server."));
+      return;
     }
-  }
 
-  onCustomizeEvent(event) {
-    // Get variantId from stored meta data
-    const variantId =
-      this.variantId || this.getAttribute("variant-id") || this.productId;
+    const productDesigner = document.createElement("product-designer");
+    productDesigner.config = data.result.config || {};
+    productDesigner.media = data.result.media || [];
+    productDesigner.meta = data.result.meta || {};
 
-    if (variantId) {
-      this.handleAddToCart(variantId, 1);
-    }
+    // Set up cart listener
+    productDesigner.addEventListener("cart", () =>
+      this.handleAddToCart(this.variantId, 1),
+    );
+
+    modal.replaceChildren(productDesigner);
   }
 
   async handleAddToCart(variantId, quantity = 1) {
-    fetch(window.Shopify.routes.root + "cart/add.js", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        items: [
-          {
-            id: variantId, // Replace with the actual variant ID
-            quantity: quantity, // Replace with the desired quantity
-          },
-        ],
-      }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Item added to cart:", data);
-        // Handle successful addition (e.g., update cart count, show confirmation)
-      })
-      .catch((error) => {
-        console.error("Error adding to cart:", error);
-        // Handle errors
+    if (!variantId) {
+      console.error("No variant ID available for add to cart");
+      return;
+    }
+
+    try {
+      const res = await fetch(window.Shopify.routes.root + "cart/add.js", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: [{ id: variantId, quantity }] }),
       });
-  }
 
-  handleConfigError(error) {
-    // Handle error
-    const modal = document.getElementById("pixobe-customize-modal");
-    modal.closeButton = true;
-    const p = document.createElement("p");
-    p.innerHTML =
-      error.message ||
-      "Unable to load product configuration. Please try again later.";
-    modal.replaceChildren(p);
-  }
+      if (!res.ok) {
+        // If the server returns an error, attempt to read the JSON for a specific message
+        const data = await res.json();
+        const serverMessage = data?.description || res.statusText;
+        throw new Error(`Add to cart failed: ${serverMessage}`);
+      }
 
-  // Public methods
-  setLoading(isLoading) {
-    const button = this.querySelector(".button");
-    if (isLoading) {
-      button.classList.add("loading");
-      button.disabled = true;
-    } else {
-      button.classList.remove("loading");
-      button.disabled = false;
+      return res.json();
+    } catch (err) {
+      console.error("Add to cart failed:", err);
+      // It might be helpful to throw here so the original caller can handle it
+      throw err;
     }
   }
 
-  updateLabel(newLabel) {
-    this.setAttribute("label", newLabel);
+  handleConfigError(err) {
+    const modal = document.getElementById("pixobe-customize-modal");
+    if (!modal) return;
+
+    const div = document.createElement("div");
+    const errorMessage =
+      err?.message || "An unexpected error occurred. Please try again.";
+    div.textContent = errorMessage;
+    modal.closeButton = true;
+    modal.replaceChildren(div);
   }
 }
 
-// Register the custom element
 if (!customElements.get("pixobe-customize-button")) {
   customElements.define("pixobe-customize-button", PixobeCustomizeButton);
 }

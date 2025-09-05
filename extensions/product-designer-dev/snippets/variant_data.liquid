@@ -1,0 +1,52 @@
+{% comment %}
+  Variant Data Helper - Makes product variant data available to JavaScript
+  Usage: {% include 'variant_data' %}
+{% endcomment %}
+
+<script>
+  // Make product variant data available globally
+  window.productVariants = [
+    {% for variant in product.variants %}
+      {
+        id: {{ variant.id }},
+        title: "{{ variant.title | escape }}",
+        price: {{ variant.price }},
+        available: {{ variant.available }},
+        options: [
+          {% for option in variant.options %}"{{ option | escape }}"{% unless forloop.last %},{% endunless %}{% endfor %}
+        ],
+        featured_image: {% if variant.featured_image %}{{ variant.featured_image | image_url: width: 800 | json }}{% else %}null{% endif %}
+      }{% unless forloop.last %},{% endunless %}
+    {% endfor %}
+  ];
+
+  // Current product data
+  window.currentProduct = {
+    id: {{ product.id }},
+    title: "{{ product.title | escape }}",
+    handle: "{{ product.handle }}",
+    selected_variant_id: {% if product.selected_or_first_available_variant %}{{ product.selected_or_first_available_variant.id }}{% else %}null{% endif %}
+  };
+
+  // Function to get variant by ID
+  window.getVariantById = function(variantId) {
+    return window.productVariants.find(variant => variant.id == variantId);
+  };
+
+  // Function to get variant by options
+  window.getVariantByOptions = function(selectedOptions) {
+    return window.productVariants.find(variant => {
+      return variant.options.every((option, index) => option === selectedOptions[index]);
+    });
+  };
+
+  // Function to trigger variant change event
+  window.triggerVariantChange = function(variantId) {
+    const variant = window.getVariantById(variantId);
+    if (variant) {
+      document.dispatchEvent(new CustomEvent('variant:change', {
+        detail: { variant: variant }
+      }));
+    }
+  };
+</script>

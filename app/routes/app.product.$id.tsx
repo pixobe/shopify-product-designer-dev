@@ -20,7 +20,6 @@ export default function ProductCustomizationPage() {
     return (
         <Page>
             <TitleBar title="Configuration">
-
             </TitleBar>
             <Layout>
                 <Layout.Section>

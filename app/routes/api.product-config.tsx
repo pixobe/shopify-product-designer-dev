@@ -1,6 +1,6 @@
 import type { LoaderFunction } from "@remix-run/node";
-import { unauthenticated } from "../shopify.server";
-import { getProductWithVariants } from "app/utils/graphql/product";
+import { authenticate } from "../shopify.server";
+import { getProductDetails } from "app/utils/graphql/product";
 
 export const loader: LoaderFunction = async ({ request }) => {
 
@@ -11,47 +11,44 @@ export const loader: LoaderFunction = async ({ request }) => {
     return Response.json({ message: "Shop ID missing", success: false }, { status: 400 });
   }
 
-  const { storefront } = await unauthenticated.storefront(
-    shop
-  );
+  const { storefront } = await authenticate.public.appProxy(request);
 
-  const productId = url.searchParams.get("productId");
+  const productId = url.searchParams.get("productId")!;
+  const variantId = url.searchParams.get("variantId");
+  const id = variantId ? variantId : productId;
 
-  if (!productId) {
-    return Response.json({ message: "ProductID missing", success: false }, { status: 400 });
+  if (!id) {
+    return Response.json({ message: "Product or Variant Id missing", success: false }, { status: 400 });
   }
 
-  const productImageResponse = await getProductWithVariants(storefront, productId);
-  const productImages = await productImageResponse.json();
+  try {
+    const product = await getProductDetails(storefront, productId, variantId);
 
-  if (!productImages.data || !productImages.data.product) {
-    return Response.json({ message: "Product Image not configured", success: false }, { status: 400 });
+    const meta = {
+      productId,
+      variantId,
+      name: product.title,
+    };
+
+    const media = product.media;
+
+    return Response.json({
+      success: true,
+      message: "Custom action completed",
+      result: {
+        config: {},
+        media: media,
+        meta: meta,
+      },
+    });
+  } catch (error) {
+    console.error("An unexpected error occurred:", error);
+    return Response.json(
+      {
+        message: "An unexpected error occurred.",
+        success: false,
+      },
+      { status: 500 }
+    );
   }
-
-  const product = productImages.data.product;
-
-  // Get the first variant ID
-  const firstVariant = product.variants?.edges?.[0]?.node;
-  const variantId = firstVariant ? firstVariant.id.replace('gid://shopify/ProductVariant/', '') : null;
-
-  const mediaItems: Array<any> = product.media.edges.map((edge: any) => ({
-    src: edge.node.image.url,
-    stroke: "",
-  }));
-
-  const meta = {
-    name: product.title,
-    variantId: variantId,
-    productId: productId
-  }
-
-  return Response.json({
-    success: true,
-    message: "Custom action completed",
-    result: {
-      config: {},
-      media: mediaItems,
-      meta: meta
-    }
-  });
 };
