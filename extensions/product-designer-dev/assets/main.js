@@ -5,27 +5,7 @@ class PixobeCustomizeButton extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ["label", "variant-id", "position", "product-id"];
-  }
-
-  connectedCallback() {
-    if (!this.isInitialized) {
-      this.render();
-      this.setupButton();
-      this.isInitialized = true;
-    }
-
-    // Register with global listener manager
-  }
-
-  disconnectedCallback() {
-    this.isInitialized = false;
-  }
-
-  attributeChangedCallback(name, oldValue, newValue) {
-    if (oldValue !== newValue && name === "label") {
-      this.render();
-    }
+    return ["label", "background-color", "text-color", "button-placement"];
   }
 
   get label() {
@@ -34,12 +14,15 @@ class PixobeCustomizeButton extends HTMLElement {
 
   get variantId() {
     const cartForm = document.querySelector('form[action="/cart/add"]');
+    console.log(cartForm, "cartForm");
     if (cartForm) {
       const variantId = cartForm.querySelector('input[name="id"]').value;
+      console.log(variantId, "variantId");
       if (variantId) {
         return variantId;
       }
     }
+
     return this.getAttribute("variant-id") || "";
   }
 
@@ -47,22 +30,114 @@ class PixobeCustomizeButton extends HTMLElement {
     return this.getAttribute("product-id") || "";
   }
 
-  render() {
-    this.innerHTML = `<button class="button button--full-width button--secondary" type="button">${this.label}</button>`;
+  _observer = null;
+
+  connectedCallback() {
+    if (this.isInitialized) return;
+
+    // First, try to set up the button immediately.
+    // This handles the case where the form already exists.
+    if (this.setupButton()) {
+      this.isInitialized = true;
+      return;
+    }
+
+    // If the form wasn't found, set up an observer to watch for it.
+    const config = { childList: true, subtree: true };
+
+    this._observer = new MutationObserver((mutations, obs) => {
+      // Look for the target element on each DOM change.
+      if (this.setupButton()) {
+        // If found, mark as initialized and stop observing.
+        this.isInitialized = true;
+        obs.disconnect(); // ✅ Crucial for performance!
+      }
+    });
+
+    // Start observing the entire document body for changes.
+    this._observer.observe(document.body, config);
+  }
+
+  disconnectedCallback() {
+    // Clean up the observer if the component is removed from the DOM.
+    if (this._observer) {
+      this._observer.disconnect();
+    }
+    this.isInitialized = false;
+  }
+
+  // This lifecycle method is called when attributes change
+  attributeChangedCallback(name, oldValue, newValue) {
+    // Don't do anything if the value hasn't changed or the button doesn't exist yet
+    if (oldValue === newValue || !this.buttonElement) return;
+
+    // 2. Apply changes based on which attribute was updated
+    switch (name) {
+      case "label":
+        this.buttonElement.textContent = newValue;
+        break;
+      case "background-color":
+        this.buttonElement.style.backgroundColor = newValue;
+        break;
+      case "text-color":
+        this.buttonElement.style.color = newValue;
+        break;
+    }
   }
 
   setupButton() {
-    const button = this.querySelector(".button");
-    if (!button) return;
+    // Find the container where the button should be placed.
+    const cartForm = document.querySelector('form:has(button[name="add"])');
+    const buttonsContainer = cartForm || this;
+
+    // If the button already exists, do nothing and return true.
+    if (document.getElementById("pixobe-customize-button")) {
+      return true;
+    }
+
+    // Create and append the button since the container exists.
+    const button = document.createElement("button");
+    button.setAttribute("id", "pixobe-customize-button");
+
+    const buttonPlacement = this.getAttribute("button-placement");
+
+    button.innerHTML =
+      buttonPlacement === "button-floating"
+        ? "<icon-edit></icon-edit>"
+        : this.getAttribute("label");
+
+    button.classList.add(
+      "button",
+      "button--full-width",
+      "button--customize",
+      buttonPlacement,
+    );
+
+    // Set the CSS variables on the element
+    button.style.setProperty(
+      "--pixobe-button-background",
+      this.getAttribute("background-color"),
+    );
+    button.style.setProperty(
+      "--pixobe-button-text",
+      this.getAttribute("text-color"),
+    );
+
+    buttonsContainer.append(button);
 
     button.addEventListener("click", (e) => {
       e.preventDefault();
       this.handleOnClick();
     });
+
+    this.buttonElement = button;
+
+    // Return true to signal that setup was successful.
+    return true;
   }
 
   async handleOnClick() {
-    const button = this.querySelector(".button");
+    const button = this.buttonElement;
     if (!button) return;
 
     button.disabled = true;

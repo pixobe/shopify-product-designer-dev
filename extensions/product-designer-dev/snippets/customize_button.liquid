@@ -1,18 +1,12 @@
-<!-- PixobeCustomizeButton Web Component -->
-{% comment %} Include variant data helper {% endcomment %}
-{% render 'variant_data' %}
-{% render 'variant_selector_helper' %}
-
 <pixobe-customize-button
   label="{{ btn_label | default: 'Customize' }}"
-  variant="primary"
-  position="{{ btn_placement | default: 'default' }}"
-  product-id="{{ product.id | default: '' }}"
-  variant-id="{% if product.selected_or_first_available_variant %}{{ product.selected_or_first_available_variant.id }}{% else %}{% endif %}"
-  style="
-    {% if btn_background %}--primary-color: {{ btn_background }};{% endif %}
-    {% if btn_color %}color: {{ btn_color }};{% endif %}
-  "
+  {% if btn_background %}
+    background-color="{{ btn_background }}"
+  {% endif %}
+  {% if btn_color %}
+    text-color="{{ btn_color }}"
+  {% endif %}
+  button-placement="{{ btn_placement | default: 'button-cart' }}"
 ></pixobe-customize-button>
 
 <pixobe-modal id="pixobe-customize-modal">
