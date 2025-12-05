@@ -1,25 +1,24 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "ab0f7182709851ef7296d79ecb2b8300"
-name = "Product Desginer Dev"
+name = "Product Designer Dev"
 application_url = "https://mactunnel.pixobe.com"
 embedded = true
 handle = "product-designer-dev"
 
 [build]
 automatically_update_urls_on_dev = true
-include_config_on_deploy = true
 
 [webhooks]
 api_version = "2025-07"
 
-  [[webhooks.subscriptions]]
-  topics = [ "app/uninstalled" ]
-  uri = "/webhooks/app/uninstalled"
+[[webhooks.subscriptions]]
+topics = ["app/scopes_update"]
+uri = "/webhooks/app/scopes_update"
 
-  [[webhooks.subscriptions]]
-  topics = [ "app/scopes_update" ]
-  uri = "/webhooks/app/scopes_update"
+[[webhooks.subscriptions]]
+topics = ["app/uninstalled"]
+uri = "/webhooks/app/uninstalled"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
@@ -29,7 +28,7 @@ scopes = "read_orders,read_products,unauthenticated_read_metaobjects,unauthentic
 redirect_urls = [
   "https://mactunnel.pixobe.com/auth/callback",
   "https://mactunnel.pixobe.com/auth/shopify/callback",
-  "https://mactunnel.pixobe.com/api/auth/callback"
+  "https://mactunnel.pixobe.com/api/auth/callback",
 ]
 
 [app_proxy]
