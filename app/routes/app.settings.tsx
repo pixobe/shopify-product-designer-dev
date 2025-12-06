@@ -35,6 +35,7 @@ type SavedSettings = {
   customizationPrice: string;
   fonts: FontSummary[];
   galleries: GallerySummary[];
+  supportInformation?: string;
 };
 
 const createFontEntry = (): FontEntry => ({
@@ -361,6 +362,9 @@ export default function SettingsRoute() {
   const [customizationPrice, setCustomizationPrice] = useState(
     () => loaderSavedSettings?.customizationPrice ?? "0.00",
   );
+  const [supportInformation, setSupportInformation] = useState(
+    () => loaderSavedSettings?.supportInformation ?? "",
+  );
   const [fonts, setFonts] = useState<FontEntry[]>(() =>
     toFontEntries(loaderSavedSettings?.fonts),
   );
@@ -391,6 +395,7 @@ export default function SettingsRoute() {
       customizationPrice,
       fonts: sanitizedFonts,
       galleries: sanitizedGalleries,
+      supportInformation: supportInformation.trim(),
     };
   };
 
@@ -437,6 +442,7 @@ export default function SettingsRoute() {
     setCustomizationPrice(nextSettings.customizationPrice);
     setFonts(() => toFontEntries(nextSettings.fonts));
     setGalleries(() => toGalleryEntries(nextSettings.galleries));
+    setSupportInformation(nextSettings.supportInformation ?? "");
     setShowSavedBanner(true);
   }, [settingsFetcher.data]);
 
@@ -557,9 +563,9 @@ export default function SettingsRoute() {
 
   return (
     <s-page heading="Settings">
-      <s-section heading="Customization defaults">
-        <form onSubmit={handleSubmit}>
-          <s-stack direction="block" gap="base">
+      <form onSubmit={handleSubmit}>
+        <s-stack direction="block" gap="base">
+          <s-section heading="General">
             <s-text-field
               label="Snap Angle"
               name="snapAngle"
@@ -572,6 +578,17 @@ export default function SettingsRoute() {
               value={customizationPrice}
               onInput={(event) => setCustomizationPrice(event.currentTarget.value)}
             />
+          </s-section>
+          <s-section heading="Customer Support Information">
+            <s-text-area
+              placeholder="Paste HTML content or text to be displayed to User for contact support"
+              name="supportInformation"
+              rows={3}
+              value={supportInformation}
+              onInput={(event: any) => setSupportInformation(event.currentTarget.value)}
+            />
+          </s-section>
+          <s-section>
             <s-stack direction="block" gap="base">
               <s-stack direction="inline" alignItems="center" justifyContent="space-between">
                 <s-text type="strong">Fonts</s-text>
@@ -645,6 +662,9 @@ export default function SettingsRoute() {
                 ))
               )}
             </s-stack>
+          </s-section>
+
+          <s-section>
             <s-stack direction="block" gap="base">
               <s-stack
                 direction="inline"
@@ -734,26 +754,26 @@ export default function SettingsRoute() {
                             }}
                           >
                             {gallery.media.map((media) => (
-                              <s-box
-                                key={media.id}
-                                border="base"
-                                borderRadius="base"
-                                padding="small"
-                              >
-                                <s-stack direction="block" gap="xsmall">
-                                  <s-thumbnail
-                                    alt={media.alt || "Gallery image"}
-                                    size="large-100"
-                                    src={media.url}
-                                  />
-                                  <s-stack
-                                    direction="inline"
-                                    alignItems="center"
-                                    justifyContent="space-between"
-                                  >
-                                    <s-text tone="neutral" >
-                                      {media.alt || "Untitled image"}
-                                    </s-text>
+                              <div style={{ position: 'relative' }}>
+                                <s-box
+                                  key={media.id}
+                                  border="base"
+                                  borderRadius="base"
+                                  padding="base"
+                                >
+                                  <s-stack direction="block" gap="small" alignItems="center">
+                                    <s-thumbnail
+                                      alt={media.alt || "Gallery image"}
+                                      size="large-100"
+                                      src={media.url}
+                                    />
+                                    <s-box >
+                                      <s-text tone="neutral" >
+                                        {media.alt || "Untitled image"}
+                                      </s-text>
+                                    </s-box>
+                                  </s-stack>
+                                  <div style={{ position: "absolute", right: "-10px", top: "-10px" }} >
                                     <s-clickable
                                       accessibilityLabel="Remove image"
                                       onClick={() =>
@@ -762,9 +782,9 @@ export default function SettingsRoute() {
                                     >
                                       <s-icon type="x-circle" color="subdued" />
                                     </s-clickable>
-                                  </s-stack>
-                                </s-stack>
-                              </s-box>
+                                  </div>
+                                </s-box>
+                              </div>
                             ))}
                           </div>
                         ) : (
@@ -776,24 +796,24 @@ export default function SettingsRoute() {
                 ))
               )}
             </s-stack>
-            {settingsErrorMessage ? (
-              <s-banner tone="critical">{settingsErrorMessage}</s-banner>
-            ) : null}
-            {showSavedBanner && savedSettings ? (
-              <s-banner tone="success">
-                Settings saved
-              </s-banner>
-            ) : null}
-            <s-button
-              type="submit"
-              variant="primary"
-              disabled={isSavingSettings}
-            >
-              {isSavingSettings ? "Saving defaults…" : "Save defaults"}
-            </s-button>
-          </s-stack>
-        </form>
-      </s-section>
+          </s-section>
+          {settingsErrorMessage ? (
+            <s-banner tone="critical">{settingsErrorMessage}</s-banner>
+          ) : null}
+          {showSavedBanner && savedSettings ? (
+            <s-banner tone="success">
+              Settings saved
+            </s-banner>
+          ) : null}
+          <s-button
+            type="submit"
+            variant="primary"
+            disabled={isSavingSettings}
+          >
+            {isSavingSettings ? "Saving defaults…" : "Save defaults"}
+          </s-button>
+        </s-stack>
+      </form>
 
       <s-modal
         ref={mediaModalRef}
