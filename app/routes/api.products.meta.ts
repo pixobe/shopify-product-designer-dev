@@ -11,13 +11,12 @@ import {
 interface MediaPayload {
   id: string;
   alt?: string;
+  name?: string;
   url?: string;
-  width?: number | null;
-  height?: number | null;
-  mimeType?: string;
   grid?: Record<string, unknown> | null;
   showGrid?: boolean;
   etching?: boolean;
+  metaobjectId?: string;
 }
 
 const buildConfigFieldValue = (media: MediaPayload) => JSON.stringify(media);
@@ -60,6 +59,57 @@ const createMetaobject = async (admin: any, media: MediaPayload) => {
   if (!id) throw new Error("Missing metaobject id in response");
 
   return id;
+};
+
+const updateMetaobject = async (
+  admin: any,
+  id: string,
+  media: MediaPayload,
+) => {
+  const response = await admin.graphql(
+    `#graphql
+      mutation UpdatePixobeMediaEntry(
+        $id: ID!
+        $metaobject: MetaobjectUpdateInput!
+      ) {
+        metaobjectUpdate(id: $id, metaobject: $metaobject) {
+          metaobject {
+            id
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `,
+    {
+      variables: {
+        id,
+        metaobject: {
+          fields: [
+            {
+              key: "config",
+              value: JSON.stringify(media),
+            },
+          ],
+        },
+      },
+    },
+  );
+
+  const body = await response.json();
+  const errors = body.data?.metaobjectUpdate?.userErrors ?? [];
+  if (errors.length) {
+    throw new Error(errors.map((e: any) => e.message).join(", "));
+  }
+
+  const updatedId = body.data?.metaobjectUpdate?.metaobject?.id;
+  if (!updatedId) {
+    throw new Error("Missing metaobject id in update response");
+  }
+
+  return updatedId as string;
 };
 
 const persistMetafield = async (
@@ -145,13 +195,22 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     const metaobjectIds: string[] = [];
 
+    console.log("Items:**************", media);
+
     for (const item of media) {
       try {
-        const metaobjectId = await createMetaobject(admin, item);
+        let metaobjectId: string;
+
+        if (item.metaobjectId) {
+          metaobjectId = await updateMetaobject(admin, item.id, item);
+        } else {
+          metaobjectId = await createMetaobject(admin, item);
+        }
+
         metaobjectIds.push(metaobjectId);
-      } catch (e) {
-        console.error("Unable to create meta object", e);
-        return data({ error: "Unable to create metaobjects" }, { status: 422 });
+      } catch (err) {
+        console.error("Unable to sync metaobject", err);
+        return data({ error: "Unable to sync metaobjects" }, { status: 422 });
       }
     }
 

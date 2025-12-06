@@ -24,6 +24,7 @@ type GridConfig = typeof DEFAULT_GRID_CONFIG;
 type MediaItem = {
   id: string;
   alt: string;
+  name: string;
   url: string;
   grid?: GridConfig | null;
   showGrid?: boolean;
@@ -138,6 +139,7 @@ const toMediaItem = (metaobject: any): MediaItem | null => {
   }
 
   const alt = typeof config.alt === "string" ? config.alt : "";
+  const name = typeof config.name === "string" ? config.name : "";
   const grid =
     parseGridField(gridField?.value ?? null) ||
     (config.grid && typeof config.grid === "object"
@@ -156,6 +158,7 @@ const toMediaItem = (metaobject: any): MediaItem | null => {
   return {
     id: typeof rawId === "string" ? rawId : String(rawId),
     alt,
+    name,
     url,
     grid,
     showGrid,
@@ -336,6 +339,7 @@ export default function CustomizePage() {
       showGrid:
         typeof item.showGrid === "boolean" ? item.showGrid : true,
       etching: typeof item.etching === "boolean" ? item.etching : false,
+      metaobjectId: item.metaobjectId,
     }));
     formData.append("media", JSON.stringify(normalizedItems));
     metafieldFetcher.submit(formData, {
@@ -495,7 +499,7 @@ export default function CustomizePage() {
                       src={item.url}
                     />
                     <s-text tone="neutral">
-                      {item.alt || "Untitled image"}
+                      {item.alt || item.name}
                     </s-text>
                   </s-stack>
                 </s-clickable>
