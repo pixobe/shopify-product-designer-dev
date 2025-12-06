@@ -7,6 +7,7 @@ import {
   PIXOBE_MEDIA_METAFIELD_KEY,
   PIXOBE_MEDIA_METAFIELD_NAMESPACE,
 } from "../constants/customization";
+import { preview } from "vite";
 
 const METAOBJECT_REFERENCES_PAGE_SIZE = 50;
 
@@ -252,7 +253,6 @@ export default function CustomizePage() {
   const [selectedMedia, setSelectedMedia] = useState<MediaItem[]>(() => loaderSelectedMedia ?? []);
   const [previewMedia, setPreviewMedia] = useState<MediaItem | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [gridConfig, setGridConfig] = useState(() => ({ ...DEFAULT_GRID_CONFIG }));
   const [showGridEnabled, setShowGridEnabled] = useState(true);
   const [etchingEnabled, setEtchingEnabled] = useState(false);
 
@@ -282,27 +282,10 @@ export default function CustomizePage() {
     if (!previewMedia) {
       return;
     }
-
-    let nextGridConfig = gridConfig;
-    try {
-      if (typeof gridEditorRef.current?.getConfig === "function") {
-        const resolvedConfig = await gridEditorRef.current.getConfig();
-        if (resolvedConfig && typeof resolvedConfig === "object") {
-          nextGridConfig = {
-            ...DEFAULT_GRID_CONFIG,
-            ...resolvedConfig,
-          };
-        }
-      }
-    } catch (error) {
-      console.error("Failed to read grid config", error);
-    }
-
-    setGridConfig(nextGridConfig);
-
+    const gridConfig = await gridEditorRef.current.getConfig();
     const updatedItem: MediaItem = {
       ...previewMedia,
-      grid: nextGridConfig,
+      grid: gridConfig,
       showGrid: showGridEnabled,
       etching: etchingEnabled,
     };
@@ -319,25 +302,17 @@ export default function CustomizePage() {
   useEffect(() => {
     if (previewMedia) {
       // Load per-media configuration when opening the preview.
-      setGridConfig(
-        previewMedia.grid ? { ...DEFAULT_GRID_CONFIG, ...previewMedia.grid } : { ...DEFAULT_GRID_CONFIG },
-      );
       setShowGridEnabled(
         typeof previewMedia.showGrid === "boolean" ? previewMedia.showGrid : true,
       );
       setEtchingEnabled(Boolean(previewMedia.etching));
     } else {
-      setGridConfig({ ...DEFAULT_GRID_CONFIG });
       setShowGridEnabled(true);
       setEtchingEnabled(false);
     }
   }, [previewMedia]);
 
-  useEffect(() => {
-    if (gridEditorRef.current) {
-      gridEditorRef.current.config = gridConfig;
-    }
-  }, [gridConfig]);
+
 
   const pendingSelectionIds = useMemo(
     () => new Set(pendingMedia.keys()),
@@ -345,11 +320,9 @@ export default function CustomizePage() {
   );
 
   const selectedCount = selectedMedia.length;
-
   const isSavingSelection = metafieldFetcher.state !== "idle";
 
   const persistSelection = (items: MediaItem[]) => {
-
     if (!productId) return;
     const formData = new FormData();
     formData.append("productId", productId);
@@ -402,7 +375,6 @@ export default function CustomizePage() {
   const removeMedia = (item: any) => {
     // Filter out the removed item
     const updated = selectedMedia.filter((m) => m.id !== item.id);
-    console.log("Removing media", item, updated);
     // Update UI state
     setSelectedMedia(updated);
     // Re-sync metafield with updated list
@@ -418,13 +390,20 @@ export default function CustomizePage() {
   const handleStrokeChange = (event: any) => {
     const nextValue =
       (typeof event?.detail?.color === "string" && event.detail.color) ||
-      (typeof event?.target?.value === "string" && event.target.value) ||
-      gridConfig.stroke;
-    setGridConfig((previous) => ({
-      ...previous,
-      stroke: nextValue,
-    }));
-    console.log("stroke color", gridConfig)
+      (typeof event?.target?.value === "string" && event.target.value)
+
+    setPreviewMedia((previous: any) => {
+      // If there is no previous media, nothing to update
+      if (!previous) return previous;
+      return {
+        ...previous,
+        grid: {
+          ...(previous.grid || {}),
+          stroke: nextValue,
+        },
+      };
+    });
+
   };
 
   const extractBooleanValue = (event: any, fallback: boolean) => {
@@ -609,7 +588,7 @@ export default function CustomizePage() {
             padding="none"
           >
             <s-grid blockSize="380px" background="strong" padding="none" alignItems="center">
-              <p-grid ref={gridEditorRef} key={previewMedia.id} config={"Hello worold here"}></p-grid>
+              <p-grid ref={gridEditorRef} key={previewMedia.id} config={previewMedia}></p-grid>
             </s-grid>
             <s-grid background="strong" padding="base" alignContent="start" gap="base">
               <s-switch
@@ -627,7 +606,7 @@ export default function CustomizePage() {
               <s-box overflow="hidden">
                 <s-text type="strong">Grid Color: </s-text>
                 <s-color-picker
-                  value={gridConfig.stroke} onInput={handleStrokeChange} onChange={handleStrokeChange} />
+                  value={previewMedia.grid?.stroke} onInput={handleStrokeChange} onChange={handleStrokeChange} />
               </s-box>
             </s-grid>
           </s-grid>
