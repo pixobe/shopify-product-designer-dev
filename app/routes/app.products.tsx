@@ -70,23 +70,20 @@ export default function ProductsPage() {
       <s-section>
         <form onSubmit={handleSearch}>
           <s-stack direction="inline" gap="base">
-            <input
-              type="text"
-              name="query"
+            <s-search-field
+              label="Search"
+              labelAccessibilityVisibility="exclusive"
               placeholder="Search by product name or ID"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              style={{
-                flex: 1,
-                minWidth: "240px",
-                padding: "10px 12px",
-                borderRadius: "8px",
-                border: "1px solid #d0d5dd",
+              onInput={(event: any) => {
+                const value = event?.target?.value ?? "";
+                setQuery(value);
+                const trimmed = value.trim();
+                const params = new URLSearchParams();
+                if (trimmed) params.set("query", trimmed);
+                fetcher.load(`/api/products${params.toString() ? `?${params.toString()}` : ""}`);
               }}
             />
-            <s-button type="submit" {...(isLoading ? { loading: true } : {})}>
-              Search
-            </s-button>
           </s-stack>
         </form>
       </s-section>

@@ -22,7 +22,7 @@ uri = "/webhooks/app/uninstalled"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_orders,read_products,unauthenticated_read_metaobjects,unauthenticated_read_product_listings,write_files,write_products"
+scopes = "read_orders,read_products,read_metaobjects,unauthenticated_read_metaobjects,unauthenticated_read_product_listings,write_files,write_metaobjects,write_products,write_metaobject_definitions"
 
 [auth]
 redirect_urls = [
@@ -38,3 +38,23 @@ prefix = "apps"
 
 [pos]
 embedded = false
+
+
+[metaobjects.app.pixobe_media_entry]
+name = "Pixobe Media Entry"
+display_name_field = "config"
+description = "Stores a media reference plus Pixobe's raw configuration payload."
+access.admin = "merchant_read_write"
+access.storefront = "public_read"
+
+[metaobjects.app.pixobe_media_entry.fields.config]
+name = "Config JSON"
+type = "json"
+description = "Arbitrary Pixobe configuration copied verbatim into the object's `config`."
+
+[product.metafields.app.pixobe_media_config]
+type = "list.metaobject_reference<$app:pixobe_media_entry>"
+name = "Pixobe Media Config"
+description = "Ordered list of Pixobe media entries attached to the product."
+access.storefront = "public_read"
+access.admin = "merchant_read_write"
