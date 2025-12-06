@@ -52,6 +52,18 @@ name = "Config JSON"
 type = "json"
 description = "Arbitrary Pixobe configuration copied verbatim into the object's `config`."
 
+[metaobjects.app.pixobe_product_settings]
+name = "pixobe-product-settings"
+display_name_field = "config"
+description = "Persists the Pixobe app defaults used by the settings page."
+access.admin = "merchant_read_write"
+access.storefront = "public_read"
+
+[metaobjects.app.pixobe_product_settings.fields.config]
+name = "Settings JSON"
+type = "json"
+description = "Serialized default configuration captured from the settings form."
+
 [product.metafields.app.pixobe_media_config]
 type = "list.metaobject_reference<$app:pixobe_media_entry>"
 name = "Pixobe Media Config"
