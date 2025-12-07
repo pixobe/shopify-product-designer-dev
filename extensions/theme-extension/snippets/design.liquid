@@ -1,7 +1,11 @@
 <div class="product-form-buttons">
-  <button type="button" class="product-customize-button" onclick="onCustomizeButtonClick();">
-    {{ 'button.customize' | t }}
-    <s-spinner accessibilityLabel="Loading" size="base" tone="inherit" />
+  <button type="button" class="product-customize-button" onclick="onCustomizeButtonClick(event);">
+    <span>
+      {{ 'button.customize' | t }}
+    </span>
+    <div class="swrapper">
+      <icon-spinner></icon-spinner>
+    </div>
   </button>
 </div>
 

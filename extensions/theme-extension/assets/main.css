@@ -29,9 +29,18 @@
     box-shadow 0.2s ease;
 }
 
-.product-customize-button s-spinner {
-  display: block;
-  color: var(--button-color);
+.product-customize-button .swrapper {
+  margin-left: 8px;
+  display: none;
+}
+
+.product-customize-button.is-loading .swrapper {
+  display: inline-block;
+}
+
+.product-customize-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 dialog {

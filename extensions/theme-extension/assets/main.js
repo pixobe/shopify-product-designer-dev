@@ -55,17 +55,30 @@ const getProductIdFromShopifyGlobals = () => {
 };
 
 const getProductId = () => {
-  const queryParam = normalizeValue(
+  const productQueryParam = normalizeValue(
     new URLSearchParams(window.location.search).get("productId"),
   );
+
+  const variableQueryParam = normalizeValue(
+    new URLSearchParams(window.location.search).get("variant"),
+  );
+
+  console.log("Variable query param", variableQueryParam);
+
+  const queryParam = variableQueryParam || productQueryParam;
+
   if (queryParam) {
     return queryParam;
   }
 
-  return getProductIdFromDom() ?? getProductIdFromShopifyGlobals();
+  const productId = getProductIdFromDom() ?? getProductIdFromShopifyGlobals();
+  if (productId) {
+    return productId;
+  }
 };
 
 const DESIGN_CONFIG_ENDPOINT = "/apps/pixobe-product-designer/design-config";
+const CART_ENDPOINT = "/apps/pixobe-product-designer/cart";
 const DIALOG_SELECTOR = "[data-pixobe-dialog]";
 const PIXOBE_DESIGNER_TAG = "product-designer";
 
@@ -168,24 +181,208 @@ const fetchDesignPayload = async (productId) => {
   }
 };
 
-async function onCustomizeButtonClick() {
-  const productId = getProductId();
-  if (!productId) {
-    console.warn("Unable to determine productId for design config request");
-    return;
+const deriveVariantId = (detail) => {
+  if (!detail || typeof detail !== "object") {
+    return null;
   }
-  const dialog = ensureDialog();
-  const designerElement = ensureDesignerElement(dialog);
-  const designPayload = await fetchDesignPayload(productId);
-  applyDesignPayload(designerElement, designPayload);
 
-  designerElement.addEventListener("cart", async (e) => {
-    console.log("cart ", e.detail);
+  return (
+    detail.variantId ||
+    detail.variant_id ||
+    (detail.variant && detail.variant.id) ||
+    detail.id ||
+    null
+  );
+};
+
+const deriveProductId = (detail, fallback) => {
+  if (
+    detail &&
+    typeof detail.productId === "string" &&
+    detail.productId.trim()
+  ) {
+    return detail.productId.trim();
+  }
+
+  if (
+    detail &&
+    typeof detail.product_id === "string" &&
+    detail.product_id.trim()
+  ) {
+    return detail.product_id.trim();
+  }
+
+  if (detail && detail.product && typeof detail.product.id === "string") {
+    return detail.product.id;
+  }
+
+  return fallback || null;
+};
+
+const normalizeCartQuantity = (value) => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.max(1, Math.trunc(value));
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return Math.max(1, Math.trunc(parsed));
+    }
+  }
+
+  return 1;
+};
+
+const sanitizeProperties = (value) => {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  return Object.assign({}, value);
+};
+
+const addConfiguredItemToCart = async ({
+  variantId,
+  productId,
+  quantity,
+  config,
+  properties,
+}) => {
+  const body = {
+    variantId,
+    productId,
+    quantity,
+  };
+
+  if (config !== undefined) {
+    body.config = config;
+  }
+
+  if (properties && Object.keys(properties).length) {
+    body.properties = properties;
+  }
+
+  const response = await fetch(CART_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(body),
   });
 
-  designerElement.addEventListener("cancel", async (e) => {
-    closeDialog(dialog);
-  });
+  let payload = null;
 
-  showDialog(dialog);
+  try {
+    payload = await response.json();
+  } catch (_error) {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    const message = (payload && payload.error) || "Unable to add item";
+    throw new Error(message);
+  }
+
+  return payload;
+};
+
+function getCurrentVariantId() {
+  const productForm = document.querySelector("form.product-form");
+  if (!productForm) return null;
+
+  const idInput = productForm.querySelector('input[name="id"]');
+  if (!idInput) return null;
+
+  return idInput.value; // this is the current variant ID
+}
+
+async function onCustomizeButtonClick(e) {
+  const target = e.currentTarget;
+  if (!target) return;
+
+  // disable button + loading state
+  target.disabled = true;
+  target.classList.add("is-loading");
+
+  try {
+    const productId = getProductId();
+    console.log("ProductID", productId);
+    if (!productId) {
+      console.warn("Unable to determine productId for design config request");
+      // if we can't continue, re-enable immediately
+      target.disabled = false;
+      target.classList.remove("is-loading");
+      return;
+    }
+
+    const dialog = ensureDialog();
+    const designerElement = ensureDesignerElement(dialog);
+    const designPayload = await fetchDesignPayload(productId);
+
+    applyDesignPayload(designerElement, designPayload);
+
+    // When user finishes and adds to cart
+    const cartHandler = async (event) => {
+      const detail = (event && event.detail) || {};
+      const variantId = deriveVariantId(detail);
+      const resolvedProductId = deriveProductId(detail, productId);
+      const configPayload =
+        detail.config ||
+        detail.customConfig ||
+        detail.designerConfig ||
+        detail.payload;
+
+      if (!variantId) {
+        console.warn("Designer cart event missing variant id", detail);
+        designerElement.addEventListener("cart", cartHandler, { once: true });
+        target.disabled = false;
+        target.classList.remove("is-loading");
+        return;
+      }
+
+      try {
+        await addConfiguredItemToCart({
+          variantId,
+          productId: resolvedProductId,
+          quantity: normalizeCartQuantity(detail.quantity || detail.qty || 1),
+          config: configPayload,
+          properties: sanitizeProperties(detail.properties || null),
+        });
+
+        closeDialog(dialog);
+      } catch (error) {
+        console.error("Unable to add configured item to cart", error);
+        if (typeof window !== "undefined" && window.alert) {
+          window.alert("Unable to add item to cart. Please try again.");
+        }
+        designerElement.addEventListener("cart", cartHandler, { once: true });
+        return;
+      } finally {
+        target.disabled = false;
+        target.classList.remove("is-loading");
+      }
+    };
+
+    designerElement.addEventListener("cart", cartHandler, { once: true });
+
+    // When user cancels customization
+    designerElement.addEventListener(
+      "cancel",
+      () => {
+        target.disabled = false;
+        target.classList.remove("is-loading");
+        closeDialog(dialog);
+      },
+      { once: true },
+    );
+
+    showDialog(dialog);
+  } catch (error) {
+    console.error("Error while opening designer:", error);
+    // in case of any failure, restore the button state
+    target.disabled = false;
+    target.classList.remove("is-loading");
+  }
 }
