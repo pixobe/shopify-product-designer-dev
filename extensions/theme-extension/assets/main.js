@@ -55,32 +55,50 @@ const getProductIdFromShopifyGlobals = () => {
 };
 
 const getProductId = () => {
-  const productQueryParam = normalizeValue(
+  const queryParam = normalizeValue(
     new URLSearchParams(window.location.search).get("productId"),
   );
-
-  const variableQueryParam = normalizeValue(
-    new URLSearchParams(window.location.search).get("variant"),
-  );
-
-  console.log("Variable query param", variableQueryParam);
-
-  const queryParam = variableQueryParam || productQueryParam;
-
   if (queryParam) {
     return queryParam;
   }
 
-  const productId = getProductIdFromDom() ?? getProductIdFromShopifyGlobals();
-  if (productId) {
-    return productId;
+  return getProductIdFromDom() ?? getProductIdFromShopifyGlobals();
+};
+
+const getVariant = () => {
+  const variableQueryParam = normalizeVariantIdValue(
+    new URLSearchParams(window.location.search).get("variant"),
+  );
+
+  if (variableQueryParam) {
+    return variableQueryParam;
   }
+
+  return null;
 };
 
 const DESIGN_CONFIG_ENDPOINT = "/apps/pixobe-product-designer/design-config";
 const CART_ENDPOINT = "/apps/pixobe-product-designer/cart";
 const DIALOG_SELECTOR = "[data-pixobe-dialog]";
 const PIXOBE_DESIGNER_TAG = "product-designer";
+const VARIANT_ID_PREFIX = "gid://shopify/ProductVariant/";
+
+const normalizeVariantIdValue = (value) => {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  const normalized = `${value}`.trim();
+  if (!normalized) {
+    return null;
+  }
+  if (normalized.startsWith(VARIANT_ID_PREFIX)) {
+    return normalized;
+  }
+  if (/^[0-9]+$/.test(normalized)) {
+    return `${VARIANT_ID_PREFIX}${normalized}`;
+  }
+  return normalized;
+};
 
 const ensureDialog = () => {
   let dialog = document.querySelector(DIALOG_SELECTOR);
@@ -153,10 +171,10 @@ const applyDesignPayload = (designer, payload) => {
   console.log(designer.media, "<<");
 };
 
-const fetchDesignPayload = async (productId) => {
+const fetchDesignPayload = async (productId, variantId) => {
   const endpoint = new URL(DESIGN_CONFIG_ENDPOINT, window.location.origin);
   endpoint.searchParams.set("productId", productId);
-
+  endpoint.searchParams.set("variantId", variantId);
   try {
     const response = await fetch(endpoint.toString());
 
@@ -308,8 +326,9 @@ async function onCustomizeButtonClick(e) {
 
   try {
     const productId = getProductId();
-    console.log("ProductID", productId);
-    if (!productId) {
+    const variantId = getVariant();
+    console.log("Product ID", productId, "variant id", variantId);
+    if (!productId && !variantId) {
       console.warn("Unable to determine productId for design config request");
       // if we can't continue, re-enable immediately
       target.disabled = false;
@@ -319,7 +338,7 @@ async function onCustomizeButtonClick(e) {
 
     const dialog = ensureDialog();
     const designerElement = ensureDesignerElement(dialog);
-    const designPayload = await fetchDesignPayload(productId);
+    const designPayload = await fetchDesignPayload(productId, variantId);
 
     applyDesignPayload(designerElement, designPayload);
 

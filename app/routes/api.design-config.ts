@@ -10,12 +10,57 @@ import {
 const DESIGN_SETTINGS_FETCH_SIZE = 1;
 const METAOBJECT_REFERENCE_FETCH_SIZE = 50;
 const PRODUCT_ID_PREFIX = "gid://shopify/Product/";
+const VARIANT_ID_PREFIX = "gid://shopify/ProductVariant/";
 
 const looksLikeProductId = (value: string) =>
   value.startsWith(PRODUCT_ID_PREFIX) || /^[0-9]+$/.test(value);
 
 const normalizeProductId = (value: string) =>
   value.startsWith(PRODUCT_ID_PREFIX) ? value : `${PRODUCT_ID_PREFIX}${value}`;
+
+const looksLikeVariantId = (value: string) =>
+  value.startsWith(VARIANT_ID_PREFIX) || /^[0-9]+$/.test(value);
+
+const normalizeVariantId = (value: string) =>
+  value.startsWith(VARIANT_ID_PREFIX) ? value : `${VARIANT_ID_PREFIX}${value}`;
+
+const normalizeVariantIdLoose = (
+  value: string | number | null | undefined,
+): string | null => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return normalizeVariantId(String(Math.trunc(value)));
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (looksLikeVariantId(trimmed)) {
+    return normalizeVariantId(trimmed);
+  }
+
+  return trimmed;
+};
+
+const variantComparisonKey = (
+  value: string | number | null | undefined,
+): string | null => {
+  const normalized = normalizeVariantIdLoose(value);
+  if (!normalized) {
+    return null;
+  }
+
+  if (normalized.startsWith(VARIANT_ID_PREFIX)) {
+    return normalized.slice(VARIANT_ID_PREFIX.length);
+  }
+
+  return normalized;
+};
 
 const parseMetaobjectFields = (
   fields: unknown,
@@ -135,7 +180,11 @@ const fetchSettingsMetaobject = async (admin: any) => {
   }
 };
 
-const fetchProductMetafield = async (admin: any, productId: string) => {
+const fetchProductMetafield = async (
+  admin: any,
+  productId: string,
+  variantId?: string | null,
+) => {
   const response = await admin.graphql(
     `#graphql
       query DesignConfigProduct(
@@ -232,9 +281,11 @@ const fetchProductMetafield = async (admin: any, productId: string) => {
     return [];
   }
 
-  const fields = references
+  const parsedFields = references
     .map((reference) => {
-      const configField = reference.fields.find((field) => field.key === "config");
+      const configField = reference.fields.find(
+        (field) => field.key === "config",
+      );
       const value = configField?.value;
 
       if (!value) {
@@ -250,7 +301,52 @@ const fetchProductMetafield = async (admin: any, productId: string) => {
     })
     .filter(Boolean);
 
-  return fields;
+  const normalizedEntries = parsedFields.map((entry: any) => {
+    if (!entry || typeof entry !== "object") {
+      return entry;
+    }
+
+    const normalizedVariantId = normalizeVariantIdLoose(
+      (entry as any).variantId ?? null,
+    );
+
+    const rawVariantId = (entry as any).variantId;
+    const comparableVariantId =
+      typeof rawVariantId === "number"
+        ? String(Math.trunc(rawVariantId))
+        : rawVariantId;
+
+    if (!normalizedVariantId && !comparableVariantId) {
+      return entry;
+    }
+
+    if (normalizedVariantId && normalizedVariantId === comparableVariantId) {
+      return entry;
+    }
+
+    return {
+      ...entry,
+      variantId: normalizedVariantId ?? undefined,
+    };
+  });
+
+  if (!variantId) {
+    return normalizedEntries;
+  }
+
+  const targetVariantKey = variantComparisonKey(variantId);
+  if (!targetVariantKey) {
+    return normalizedEntries;
+  }
+
+  return normalizedEntries.filter((entry: any) => {
+    if (!entry || typeof entry !== "object") {
+      return false;
+    }
+
+    const entryKey = variantComparisonKey((entry as any).variantId ?? null);
+    return entryKey === targetVariantKey;
+  });
 };
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -271,10 +367,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     rawProductId && looksLikeProductId(rawProductId)
       ? normalizeProductId(rawProductId)
       : null;
+  const rawVariantId = url.searchParams.get("variantId")?.trim();
+  const variantId =
+    rawVariantId && looksLikeVariantId(rawVariantId)
+      ? normalizeVariantId(rawVariantId)
+      : null;
 
   const config = await fetchSettingsMetaobject(admin);
   const media = productId
-    ? await fetchProductMetafield(admin, productId)
+    ? await fetchProductMetafield(admin, productId, variantId)
     : [];
 
   return {

@@ -1,12 +1,109 @@
 import type { ActionFunctionArgs } from "react-router";
 import { data } from "react-router";
-
 import { authenticate } from "../shopify.server";
 import {
   PIXOBE_MEDIA_METAOBJECT_TYPE,
   PIXOBE_MEDIA_METAFIELD_KEY,
   PIXOBE_MEDIA_METAFIELD_NAMESPACE,
 } from "../constants/customization";
+
+const HANDLE_PREFIX = "pixobe-media";
+const PRODUCT_ID_PREFIX = "gid://shopify/Product/";
+const VARIANT_ID_PREFIX = "gid://shopify/ProductVariant/";
+const NUMERIC_ID_REGEX = /^[0-9]+$/;
+
+const sanitizeHandleSegment = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 200);
+
+const extractGidSegment = (gid?: string | null) => {
+  if (!gid) {
+    return null;
+  }
+
+  const parts = gid.split("/");
+  return parts[parts.length - 1] || gid;
+};
+
+const normalizeProductId = (value?: string | null) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (trimmed.startsWith(PRODUCT_ID_PREFIX)) {
+    return trimmed;
+  }
+
+  if (NUMERIC_ID_REGEX.test(trimmed)) {
+    return `${PRODUCT_ID_PREFIX}${trimmed}`;
+  }
+
+  return trimmed;
+};
+
+const normalizeVariantIdValue = (
+  value?: string | number | null,
+) => {
+  let candidate: string | null = null;
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    candidate = String(Math.trunc(value));
+  } else if (typeof value === "string") {
+    candidate = value;
+  }
+
+  if (!candidate) {
+    return null;
+  }
+
+  const trimmed = candidate.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (trimmed.startsWith(VARIANT_ID_PREFIX)) {
+    return trimmed;
+  }
+
+  if (NUMERIC_ID_REGEX.test(trimmed)) {
+    return `${VARIANT_ID_PREFIX}${trimmed}`;
+  }
+
+  return trimmed;
+};
+
+const sanitizeMetaobjectId = (value?: string | null) => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed || undefined;
+};
+
+const buildMetaobjectHandle = (media: MediaPayload) => {
+  const baseId =
+    typeof media.id === "string"
+      ? extractGidSegment(media.id) ?? "media"
+      : "media";
+  const variantSegment =
+    typeof media.variantId === "string" && media.variantId
+      ? extractGidSegment(media.variantId) || "default"
+      : "default";
+
+  const normalized = sanitizeHandleSegment(`${baseId}-${variantSegment}`);
+  const suffix = normalized || Math.random().toString(36).slice(2, 10);
+  const handle = `${HANDLE_PREFIX}-${suffix}`;
+  return handle.slice(0, 255);
+};
 
 interface MediaPayload {
   id: string;
@@ -17,7 +114,14 @@ interface MediaPayload {
   showGrid?: boolean;
   etching?: boolean;
   metaobjectId?: string;
+  variantId?: string | null;
 }
+
+const sanitizeMediaPayload = (media: MediaPayload): MediaPayload => ({
+  ...media,
+  metaobjectId: sanitizeMetaobjectId(media.metaobjectId ?? null),
+  variantId: normalizeVariantIdValue(media.variantId) ?? null,
+});
 
 const buildConfigFieldValue = (media: MediaPayload) => JSON.stringify(media);
 
@@ -39,6 +143,7 @@ const createMetaobject = async (admin: any, media: MediaPayload) => {
       variables: {
         metaobject: {
           type: PIXOBE_MEDIA_METAOBJECT_TYPE,
+          handle: buildMetaobjectHandle(media),
           fields: [
             {
               key: "config",
@@ -87,6 +192,7 @@ const updateMetaobject = async (
       variables: {
         id,
         metaobject: {
+          handle: buildMetaobjectHandle(media),
           fields: [
             {
               key: "config",
@@ -182,8 +288,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const { admin } = await authenticate.admin(request);
     const { productId, media } = await parseRequestPayload(request);
 
-    if (!productId) {
-      return data({ error: "Missing product id" }, { status: 400 });
+    const normalizedProductId = normalizeProductId(productId ?? null);
+    if (!normalizedProductId) {
+      return data({ error: "Missing or invalid product id" }, { status: 400 });
     }
 
     if (!Array.isArray(media)) {
@@ -193,14 +300,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       );
     }
 
+    const sanitizedMedia = media.map(sanitizeMediaPayload);
     const metaobjectIds: string[] = [];
 
-    for (const item of media) {
+    for (const item of sanitizedMedia) {
       try {
         let metaobjectId: string;
 
         if (item.metaobjectId) {
-          metaobjectId = await updateMetaobject(admin, item.id, item);
+          metaobjectId = await updateMetaobject(admin, item.metaobjectId, item);
         } else {
           metaobjectId = await createMetaobject(admin, item);
         }
@@ -212,7 +320,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
     }
 
-    await persistMetafield(admin, productId, metaobjectIds);
+    await persistMetafield(admin, normalizedProductId, metaobjectIds);
 
     return data({ metaobjectIds });
   } catch (error: any) {

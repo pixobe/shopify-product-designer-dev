@@ -7,9 +7,9 @@ import {
   PIXOBE_MEDIA_METAFIELD_KEY,
   PIXOBE_MEDIA_METAFIELD_NAMESPACE,
 } from "../constants/customization";
-import { preview } from "vite";
 
 const METAOBJECT_REFERENCES_PAGE_SIZE = 50;
+const PRODUCT_VARIANTS_PAGE_SIZE = 100;
 
 const DEFAULT_GRID_CONFIG = {
   rLeft: 0.5,
@@ -17,6 +17,40 @@ const DEFAULT_GRID_CONFIG = {
   scaleX: 0.5,
   scaleY: 0.5,
   stroke: "#ff0000",
+};
+
+const VARIANT_ID_PREFIX = "gid://shopify/ProductVariant/";
+const NUMERIC_ID_REGEX = /^[0-9]+$/;
+
+const normalizeVariantIdValue = (
+  value: string | number | null | undefined,
+): string | null => {
+  let candidate: string | null = null;
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    candidate = String(Math.trunc(value));
+  } else if (typeof value === "string") {
+    candidate = value;
+  }
+
+  if (!candidate) {
+    return null;
+  }
+
+  const trimmed = candidate.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (trimmed.startsWith(VARIANT_ID_PREFIX)) {
+    return trimmed;
+  }
+
+  if (NUMERIC_ID_REGEX.test(trimmed)) {
+    return `${VARIANT_ID_PREFIX}${trimmed}`;
+  }
+
+  return trimmed;
 };
 
 type GridConfig = typeof DEFAULT_GRID_CONFIG;
@@ -30,11 +64,95 @@ type MediaItem = {
   showGrid?: boolean;
   etching?: boolean;
   metaobjectId?: string;
+  variantId?: string | null;
 };
 
 type MetaobjectField = {
   key: string;
   value?: string | null;
+};
+
+type VariantOption = {
+  name: string;
+  value: string;
+};
+
+type ProductVariant = {
+  id: string;
+  title: string;
+  selectedOptions: VariantOption[];
+};
+
+const formatVariantLabel = (variant: ProductVariant): string => {
+  const optionLabels = variant.selectedOptions
+    .filter(
+      (option) =>
+        option.value && option.name && option.name.toLowerCase() !== "title",
+    )
+    .map((option) => option.value.trim())
+    .filter(Boolean);
+
+  if (optionLabels.length > 0) {
+    return optionLabels.join(" / ");
+  }
+
+  return variant.title || "Variant";
+};
+
+const assignFallbackVariantToMedia = (
+  items: MediaItem[] | undefined,
+  fallbackVariantId: string | null,
+): MediaItem[] => {
+  const safeItems = Array.isArray(items) ? items : [];
+  const normalizedFallbackId = normalizeVariantIdValue(fallbackVariantId);
+
+  return safeItems.map((item) => {
+    const normalizedVariantId = normalizeVariantIdValue(item.variantId);
+    const resolvedVariantId =
+      normalizedVariantId ?? normalizedFallbackId ?? null;
+
+    if (resolvedVariantId && resolvedVariantId === item.variantId) {
+      return item;
+    }
+
+    if (resolvedVariantId) {
+      return {
+        ...item,
+        variantId: resolvedVariantId,
+      };
+    }
+
+    if (item.variantId) {
+      return {
+        ...item,
+        variantId: undefined,
+      };
+    }
+
+    return item;
+  });
+};
+
+const resolveVariantId = (
+  media: MediaItem,
+  fallbackVariantId: string | null,
+): string | null =>
+  normalizeVariantIdValue(media.variantId ?? fallbackVariantId ?? null);
+
+const mediaEntriesMatch = (
+  candidate: MediaItem,
+  target: MediaItem,
+  fallbackVariantId: string | null,
+) => {
+  if (candidate.metaobjectId && target.metaobjectId) {
+    return candidate.metaobjectId === target.metaobjectId;
+  }
+
+  return (
+    candidate.id === target.id &&
+    resolveVariantId(candidate, fallbackVariantId) ===
+    resolveVariantId(target, fallbackVariantId)
+  );
 };
 
 const toOptionalNumber = (value: unknown): number | null => {
@@ -154,6 +272,9 @@ const toMediaItem = (metaobject: any): MediaItem | null => {
   const etching =
     parseBooleanField(etchingField?.value ?? null) ??
     (typeof config.etching === "boolean" ? config.etching : undefined);
+  const normalizedVariantId = normalizeVariantIdValue(
+    typeof config.variantId === "string" ? config.variantId : null,
+  );
 
   return {
     id: typeof rawId === "string" ? rawId : String(rawId),
@@ -165,6 +286,7 @@ const toMediaItem = (metaobject: any): MediaItem | null => {
     etching,
     metaobjectId:
       typeof metaobject.id === "string" ? metaobject.id : undefined,
+    variantId: normalizedVariantId ?? undefined,
   };
 };
 
@@ -181,6 +303,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const fallbackProductName = url.searchParams.get("title") ?? "";
   let productName = fallbackProductName;
   let selectedMedia: MediaItem[] = [];
+  let variants: ProductVariant[] = [];
 
   if (productId) {
     const { admin } = await authenticate.admin(request);
@@ -191,10 +314,21 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           $namespace: String!
           $key: String!
           $first: Int!
+          $variantFirst: Int!
         ) {
           product(id: $id) {
             id
             title
+            variants(first: $variantFirst) {
+              nodes {
+                id
+                title
+                selectedOptions {
+                  name
+                  value
+                }
+              }
+            }
             metafield(namespace: $namespace, key: $key) {
               references(first: $first) {
                 nodes {
@@ -218,6 +352,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           namespace: PIXOBE_MEDIA_METAFIELD_NAMESPACE,
           key: PIXOBE_MEDIA_METAFIELD_KEY,
           first: METAOBJECT_REFERENCES_PAGE_SIZE,
+          variantFirst: PRODUCT_VARIANTS_PAGE_SIZE,
         },
       },
     );
@@ -233,6 +368,54 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       productName = product.title;
     }
 
+    const variantNodes =
+      product?.variants?.nodes ??
+      (Array.isArray(product?.variants?.edges)
+        ? product.variants.edges
+          .map((edge: any) => edge?.node)
+          .filter(Boolean)
+        : []);
+
+    variants = variantNodes
+      .map((variant: any) => {
+        if (!variant || typeof variant.id !== "string") {
+          return null;
+        }
+
+        const normalizedVariantId = normalizeVariantIdValue(variant.id);
+        if (!normalizedVariantId) {
+          return null;
+        }
+
+        const selectedOptions: VariantOption[] = Array.isArray(
+          variant.selectedOptions,
+        )
+          ? variant.selectedOptions
+            .map((option: any) => {
+              if (
+                option &&
+                typeof option.name === "string" &&
+                typeof option.value === "string"
+              ) {
+                return { name: option.name, value: option.value };
+              }
+              return null;
+            })
+            .filter(
+              (
+                option,
+              ): option is VariantOption => Boolean(option && option.value),
+            )
+          : [];
+
+        return {
+          id: normalizedVariantId,
+          title: typeof variant.title === "string" ? variant.title : "",
+          selectedOptions,
+        } as ProductVariant;
+      })
+      .filter((variant): variant is ProductVariant => Boolean(variant));
+
     const referenceNodes = product?.metafield?.references?.nodes ?? [];
     selectedMedia = extractMediaFromReferences(referenceNodes);
   }
@@ -241,27 +424,55 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     productId,
     productName,
     selectedMedia,
+    variants,
   });
 };
 
 export default function CustomizePage() {
   const loaderData = useLoaderData<typeof loader>();
-  const { productId, productName, selectedMedia: loaderSelectedMedia } = loaderData;
+  const {
+    productId,
+    productName,
+    selectedMedia: loaderSelectedMedia,
+    variants: loaderVariants = [],
+  } = loaderData;
   const modalRef = useRef<HTMLElementTagNameMap["s-modal"] | null>(null);
   const previewModalRef = useRef<HTMLElementTagNameMap["s-modal"] | null>(null);
   const gridEditorRef = useRef<any>(null);
   const mediaFetcher = useFetcher<{ media: MediaItem[] }>();
   const metafieldFetcher = useFetcher<{ metaobjectIds?: string[]; error?: string }>();
   const [pendingMedia, setPendingMedia] = useState<Map<string, MediaItem>>(new Map());
-  const [selectedMedia, setSelectedMedia] = useState<MediaItem[]>(() => loaderSelectedMedia ?? []);
+  const defaultVariantId = normalizeVariantIdValue(loaderVariants[0]?.id ?? null);
+  const normalizedLoaderMedia = useMemo(
+    () => assignFallbackVariantToMedia(loaderSelectedMedia, defaultVariantId),
+    [loaderSelectedMedia, defaultVariantId],
+  );
+  const [selectedMedia, setSelectedMedia] = useState<MediaItem[]>(normalizedLoaderMedia);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
+    defaultVariantId,
+  );
   const [previewMedia, setPreviewMedia] = useState<MediaItem | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showGridEnabled, setShowGridEnabled] = useState(true);
   const [etchingEnabled, setEtchingEnabled] = useState(false);
 
   useEffect(() => {
-    setSelectedMedia(loaderSelectedMedia ?? []);
-  }, [loaderSelectedMedia]);
+    setSelectedMedia(normalizedLoaderMedia);
+  }, [normalizedLoaderMedia]);
+
+  useEffect(() => {
+    if (!loaderVariants.length) {
+      setSelectedVariantId(null);
+      return;
+    }
+
+    setSelectedVariantId((previous) => {
+      if (previous && loaderVariants.some((variant) => variant.id === previous)) {
+        return previous;
+      }
+      return loaderVariants[0]?.id ?? null;
+    });
+  }, [loaderVariants]);
 
   const openMediaModal = () => {
     if (!mediaFetcher.data && mediaFetcher.state === "idle") {
@@ -286,15 +497,22 @@ export default function CustomizePage() {
       return;
     }
     const gridConfig = await gridEditorRef.current.getConfig();
+    const variantForItem = resolveVariantId(
+      previewMedia,
+      resolvedVariantId,
+    );
     const updatedItem: MediaItem = {
       ...previewMedia,
       grid: gridConfig,
       showGrid: showGridEnabled,
       etching: etchingEnabled,
+      variantId: variantForItem,
     };
 
     const nextSelection = selectedMedia.map((item) =>
-      item.id === previewMedia.id ? updatedItem : item,
+      mediaEntriesMatch(item, updatedItem, variantForItem)
+        ? updatedItem
+        : item,
     );
 
     setSelectedMedia(nextSelection);
@@ -315,14 +533,45 @@ export default function CustomizePage() {
     }
   }, [previewMedia]);
 
+  const hasVariants = loaderVariants.length > 0;
+  const variantOptions = useMemo(
+    () =>
+      loaderVariants.map((variant) => ({
+        id: variant.id,
+        label: formatVariantLabel(variant),
+      })),
+    [loaderVariants],
+  );
+  const variantLabelMap = useMemo(() => {
+    const entries = new Map<string, string>();
+    variantOptions.forEach((variant) => {
+      entries.set(variant.id, variant.label);
+    });
+    return entries;
+  }, [variantOptions]);
+  const activeVariantMedia = useMemo(() => {
+    if (!selectedVariantId) {
+      return selectedMedia;
+    }
 
+    return selectedMedia.filter((item) => {
+      const itemVariantId = item.variantId ?? null;
+      return itemVariantId === selectedVariantId;
+    });
+  }, [selectedMedia, selectedVariantId]);
+  const selectedVariantLabel = selectedVariantId
+    ? variantLabelMap.get(selectedVariantId) ?? null
+    : null;
+  const resolvedVariantId = normalizeVariantIdValue(
+    selectedVariantId ?? defaultVariantId ?? null,
+  );
 
   const pendingSelectionIds = useMemo(
     () => new Set(pendingMedia.keys()),
     [pendingMedia],
   );
 
-  const selectedCount = selectedMedia.length;
+  const selectedCount = activeVariantMedia.length;
   const isSavingSelection = metafieldFetcher.state !== "idle";
 
   const persistSelection = (items: MediaItem[]) => {
@@ -340,6 +589,7 @@ export default function CustomizePage() {
         typeof item.showGrid === "boolean" ? item.showGrid : true,
       etching: typeof item.etching === "boolean" ? item.etching : false,
       metaobjectId: item.metaobjectId,
+      variantId: normalizeVariantIdValue(item.variantId) ?? null,
     }));
     formData.append("media", JSON.stringify(normalizedItems));
     metafieldFetcher.submit(formData, {
@@ -361,35 +611,50 @@ export default function CustomizePage() {
   };
 
   const saveSelectedMediaToConfig = () => {
-    const newItems = Array.from(pendingMedia.values());
+    const targetVariantId = resolvedVariantId;
+    const newItems = Array.from(pendingMedia.values()).map((item) => ({
+      ...item,
+      variantId: targetVariantId,
+    }));
 
-    // Merge without duplicates
-    const merged = [
-      ...selectedMedia,
-      ...newItems.filter(
-        (item) => !selectedMedia.some((existing) => existing.id === item.id)
-      ),
-    ];
+    const existingIds = new Set(
+      selectedMedia
+        .filter(
+          (item) => resolveVariantId(item, targetVariantId) === targetVariantId,
+        )
+        .map((item) => item.id),
+    );
+    const dedupedItems = newItems.filter((item) => !existingIds.has(item.id));
+    if (dedupedItems.length === 0) {
+      setPendingMedia(new Map());
+      closeMediaModal();
+      return;
+    }
+
+    const merged = [...selectedMedia, ...dedupedItems];
     setSelectedMedia(merged);
     setPendingMedia(new Map());
     persistSelection(merged);
     closeMediaModal();
   };
 
-  const removeMedia = (item: any) => {
-    // Filter out the removed item
-    const updated = selectedMedia.filter((m) => m.id !== item.id);
-    // Update UI state
+  const removeMedia = (item: MediaItem) => {
+    const updated = selectedMedia.filter(
+      (entry) => !mediaEntriesMatch(entry, item, resolvedVariantId),
+    );
     setSelectedMedia(updated);
-    // Re-sync metafield with updated list
     persistSelection(updated);
-  }
+  };
 
   const errorMessage = metafieldFetcher.data?.error;
   const savedCount = metafieldFetcher.data?.metaobjectIds?.length ?? 0;
   const showSuccessMessage = !isSavingSelection && !errorMessage && savedCount > 0;
 
-  const isAddDisabled = pendingMedia.size === 0 || !productId || isSavingSelection;
+  const isAddDisabled =
+    pendingMedia.size === 0 ||
+    !productId ||
+    isSavingSelection ||
+    (hasVariants && !selectedVariantId);
 
   const handleStrokeChange = (event: any) => {
     const nextValue =
@@ -439,11 +704,59 @@ export default function CustomizePage() {
         </s-text>
       </s-section>
 
-      <s-section heading="Media">
+      <s-section heading="Variants">
+        {variantOptions.length > 0 ? (
+          <s-stack gap="small">
+            <s-text>Select a variant to upload and manage media for.</s-text>
+            <div
+              role="radiogroup"
+              aria-label="Select product variant"
+              style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}
+            >
+              {variantOptions.map((variant) => {
+                const isActive = selectedVariantId === variant.id;
+                return (
+                  <label
+                    key={variant.id}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      border: isActive
+                        ? "2px solid #008060"
+                        : "1px solid #d2d5d8",
+                      borderRadius: "8px",
+                      padding: "8px 12px",
+                      cursor: "pointer",
+                      backgroundColor: isActive ? "#f0faf5" : "transparent",
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="variant-selector"
+                      value={variant.id}
+                      checked={isActive}
+                      onChange={() => setSelectedVariantId(variant.id)}
+                      style={{ margin: 0 }}
+                    />
+                    <span>{variant.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </s-stack>
+        ) : (
+          <s-text color="subdued">No variants available for this product.</s-text>
+        )}
+      </s-section>
+
+      <s-section heading={selectedVariantLabel ? `Media for ${selectedVariantLabel}` : "Media"}>
         <s-stack direction="inline" gap="base">
           <s-button onClick={openMediaModal}>Add Media</s-button>
           {selectedCount > 0 && (
-            <s-text tone="success">{`${selectedCount} image${selectedCount > 1 ? "s" : ""} selected`}</s-text>
+            <s-text tone="success">
+              {`${selectedCount} image${selectedCount > 1 ? "s" : ""} selected${selectedVariantLabel ? ` for ${selectedVariantLabel}` : ""}`}
+            </s-text>
           )}
         </s-stack>
 
@@ -468,15 +781,15 @@ export default function CustomizePage() {
           </s-box>
         )}
 
-        {selectedMedia.length > 0 ? (
+        {activeVariantMedia.length > 0 ? (
           <s-stack gap="small-200" paddingBlockStart="base">
             <s-grid blockSize="auto"
               gridTemplateColumns="repeat(auto-fill, minmax(120px, 1fr))"
               gap="base"
             >
-              {selectedMedia.map((item) => (
+              {activeVariantMedia.map((item) => (
                 <s-clickable
-                  key={item.id}
+                  key={`${item.variantId ?? "unassigned"}-${item.id}`}
                   border="base"
                   borderRadius="base"
                   padding="small"
@@ -508,7 +821,7 @@ export default function CustomizePage() {
           </s-stack>
         ) : (
           <s-box paddingBlockStart="base">
-            <s-text color="subdued">No media selected yet.</s-text>
+            <s-text color="subdued">No media selected yet for this variant.</s-text>
           </s-box>
         )}
       </s-section>
