@@ -1,0 +1,51 @@
+.product-customize-button {
+  /* Map theme variables to local button vars (with safe fallbacks) */
+  --button-color: var(--color-primary-button-text, #ffffff);
+  --button-bg: var(--color-primary-button-background, #000000);
+  --button-border-color: var(--color-primary-button-border, transparent);
+  --button-border-width: var(--style-border-width-primary, 1px);
+  --button-radius: var(--style-border-radius-primary, 14px);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0.9rem 1.6rem;
+  font: inherit;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+
+  color: var(--button-color);
+  background-color: var(--button-bg);
+  border-radius: var(--button-radius);
+  border: var(--button-border-width) solid var(--button-border-color);
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.product-customize-button s-spinner {
+  display: block;
+  color: var(--button-color);
+}
+
+dialog {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  max-width: none;
+  max-height: none;
+  border: none;
+  border-radius: 24px;
+  padding: 0;
+  background: white;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  transform: scale(0.95);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}

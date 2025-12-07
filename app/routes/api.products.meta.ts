@@ -195,8 +195,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     const metaobjectIds: string[] = [];
 
-    console.log("Items:**************", media);
-
     for (const item of media) {
       try {
         let metaobjectId: string;

@@ -1,0 +1,18 @@
+{{ 'main.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'main.js' | asset_url }}" async></script>
+
+{% render 'design' %}
+
+{% schema %}
+{
+  "name": "Product Design",
+  "target": "section",
+  "settings": [
+    { "type": "product", "id": "product", "label": "product", "autofill": true },
+    { "type": "color", "id": "colour", "label": "Button Colour", "default": "#000000" }
+  ]
+}
+{% endschema %}
+
+<script src="https://localapp.pixobe.com/build/product-designer.esm.js" type="module" async></script>
+<script src="https://cdn.shopify.com/shopifycloud/polaris.js" defer></script>
