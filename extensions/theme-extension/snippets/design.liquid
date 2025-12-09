@@ -1,5 +1,10 @@
 <div class="product-form-buttons">
-  <button type="button" class="product-customize-button" onclick="onCustomizeButtonClick(event);">
+  <button
+    type="button"
+    class="product-customize-button"
+    data-product="{{ product.id }}"
+    onclick="onCustomizeButtonClick(event);"
+  >
     <span>
       {{ 'button.customize' | t }}
     </span>

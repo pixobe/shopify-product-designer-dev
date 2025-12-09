@@ -185,6 +185,7 @@ const fetchProductMetafield = async (
   productId: string,
   variantId?: string | null,
 ) => {
+  console.log("Variant ID :::", variantId, "productD:::", productId);
   const response = await admin.graphql(
     `#graphql
       query DesignConfigProduct(
@@ -367,6 +368,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     rawProductId && looksLikeProductId(rawProductId)
       ? normalizeProductId(rawProductId)
       : null;
+
   const rawVariantId = url.searchParams.get("variantId")?.trim();
   const variantId =
     rawVariantId && looksLikeVariantId(rawVariantId)

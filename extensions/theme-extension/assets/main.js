@@ -7,64 +7,6 @@ const normalizeValue = (value) => {
   return trimmed === "" ? null : trimmed;
 };
 
-const getProductIdFromDom = () => {
-  const selectors = [
-    () => document.body?.dataset.productId ?? null,
-    () => document.body?.dataset.productGid ?? null,
-    () => document.documentElement?.dataset.productId ?? null,
-    () =>
-      document
-        .querySelector("[data-product-id]")
-        ?.getAttribute("data-product-id") ?? null,
-    () =>
-      document
-        .querySelector("[data-product-gid]")
-        ?.getAttribute("data-product-gid") ?? null,
-  ];
-
-  for (const selector of selectors) {
-    const candidate = normalizeValue(selector());
-    if (candidate) {
-      return candidate;
-    }
-  }
-
-  return null;
-};
-
-const getProductIdFromShopifyGlobals = () => {
-  const analytics = window.ShopifyAnalytics?.meta;
-  const pageResource = window?.meta?.page;
-
-  const candidates = [
-    () => analytics?.product?.id,
-    () => analytics?.product?.gid,
-    () => analytics?.product?.resourceId,
-    () => analytics?.page?.resourceId,
-    () => pageResource?.resourceId,
-  ];
-
-  for (const candidate of candidates) {
-    const value = normalizeValue(candidate());
-    if (value) {
-      return value;
-    }
-  }
-
-  return null;
-};
-
-const getProductId = () => {
-  const queryParam = normalizeValue(
-    new URLSearchParams(window.location.search).get("productId"),
-  );
-  if (queryParam) {
-    return queryParam;
-  }
-
-  return getProductIdFromDom() ?? getProductIdFromShopifyGlobals();
-};
-
 const getVariant = () => {
   const variableQueryParam = normalizeVariantIdValue(
     new URLSearchParams(window.location.search).get("variant"),
@@ -74,11 +16,11 @@ const getVariant = () => {
     return variableQueryParam;
   }
 
-  return null;
+  return getCurrentVariantId();
 };
 
 const DESIGN_CONFIG_ENDPOINT = "/apps/pixobe-product-designer/design-config";
-const CART_ENDPOINT = "/apps/pixobe-product-designer/cart";
+const UPLOAD_CONFIG_ENDPOINT = "/apps/pixobe-product-designer/upload";
 const DIALOG_SELECTOR = "[data-pixobe-dialog]";
 const PIXOBE_DESIGNER_TAG = "product-designer";
 const VARIANT_ID_PREFIX = "gid://shopify/ProductVariant/";
@@ -90,12 +32,6 @@ const normalizeVariantIdValue = (value) => {
   const normalized = `${value}`.trim();
   if (!normalized) {
     return null;
-  }
-  if (normalized.startsWith(VARIANT_ID_PREFIX)) {
-    return normalized;
-  }
-  if (/^[0-9]+$/.test(normalized)) {
-    return `${VARIANT_ID_PREFIX}${normalized}`;
   }
   return normalized;
 };
@@ -114,18 +50,21 @@ const ensureDialog = () => {
   return dialog;
 };
 
-const ensureDesignerElement = (dialog) => {
-  let designer = dialog.querySelector(PIXOBE_DESIGNER_TAG);
-
-  if (designer) {
-    return designer;
+const removeExistingDesigner = (dialog) => {
+  const existingDesigner = dialog.querySelector(PIXOBE_DESIGNER_TAG);
+  if (existingDesigner) {
+    existingDesigner.remove();
   }
+};
 
-  designer = document.createElement(PIXOBE_DESIGNER_TAG);
-  designer.setAttribute("data-pixobe-designer", "");
-  dialog.appendChild(designer);
-
+const ensureDesignerElement = (dialog) => {
+  removeExistingDesigner(dialog);
+  const designer = document.createElement(PIXOBE_DESIGNER_TAG);
   return designer;
+};
+
+const clearDialogContents = (dialog) => {
+  dialog.replaceChildren();
 };
 
 const showDialog = (dialog) => {
@@ -133,11 +72,12 @@ const showDialog = (dialog) => {
     return;
   }
 
+  clearDialogContents(dialog);
   if (typeof dialog.showModal === "function") {
+    dialog.appendChild(document.createElement("pixobe-spinner"));
     dialog.showModal();
     return;
   }
-
   dialog.setAttribute("open", "open");
 };
 
@@ -156,19 +96,22 @@ const closeDialog = (dialog) => {
   dialog.removeAttribute("open");
 };
 
-const applyDesignPayload = (designer, payload) => {
+const removeSpinner = (dialog) => {
+  const spinner = dialog.querySelector("pixobe-spinner");
+  if (spinner) {
+    spinner.remove();
+  }
+};
+
+const applyDesignPayload = (dialog, designer, payload) => {
   designer.config = payload?.config ?? {};
   designer.media = Array.isArray(payload?.media) ? payload.media : [];
   designer.meta = {
-    id: "1066",
     name: "Round Neck T-Shirt",
-    price: "50",
-    currency: "&#36;",
-    description:
-      "Neque porro quisquam est qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit",
   };
   designer.labels = {};
-  console.log(designer.media, "<<");
+  // Remove spinner before appending designer
+  dialog.appendChild(designer);
 };
 
 const fetchDesignPayload = async (productId, variantId) => {
@@ -203,7 +146,6 @@ const deriveVariantId = (detail) => {
   if (!detail || typeof detail !== "object") {
     return null;
   }
-
   return (
     detail.variantId ||
     detail.variant_id ||
@@ -260,6 +202,33 @@ const sanitizeProperties = (value) => {
   return Object.assign({}, value);
 };
 
+const fetchCartToken = async () => {
+  try {
+    const response = await fetch("/cart.js");
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json().catch(() => null);
+    if (!data || typeof data !== "object") {
+      return null;
+    }
+
+    if (typeof data.token === "string" && data.token.trim()) {
+      return data.token.trim();
+    }
+
+    if (typeof data.id === "string" && data.id.trim()) {
+      return data.id.trim();
+    }
+
+    return null;
+  } catch (error) {
+    console.warn("Unable to fetch cart token", error);
+    return null;
+  }
+};
+
 const addConfiguredItemToCart = async ({
   variantId,
   productId,
@@ -267,43 +236,49 @@ const addConfiguredItemToCart = async ({
   config,
   properties,
 }) => {
-  const body = {
-    variantId,
-    productId,
-    quantity,
-  };
-
-  if (config !== undefined) {
-    body.config = config;
-  }
-
-  if (properties && Object.keys(properties).length) {
-    body.properties = properties;
-  }
-
-  const response = await fetch(CART_ENDPOINT, {
+  const response = await fetch("/cart/add.js", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Accept: "application/json",
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      items: [
+        {
+          id: variantId,
+          quantity: 1,
+        },
+      ],
+    }),
   });
 
-  let payload = null;
-
-  try {
-    payload = await response.json();
-  } catch (_error) {
-    payload = null;
-  }
+  const addPayload = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const message = (payload && payload.error) || "Unable to add item";
+    const message = (addPayload && addPayload.error) || "Unable to add item";
     throw new Error(message);
   }
 
-  return payload;
+  const cartToken = await fetchCartToken();
+
+  const form = new FormData();
+  form.append("json", JSON.stringify(config ?? {}));
+  if (cartToken) {
+    form.append("cart_id", cartToken);
+  }
+
+  const res = await fetch(UPLOAD_CONFIG_ENDPOINT, {
+    method: "POST",
+    body: form,
+  });
+  const uploadPayload = await res.json().catch(() => null);
+
+  if (!res.ok || !uploadPayload?.ok) {
+    const message =
+      uploadPayload?.error ?? uploadPayload?.message ?? "Upload failed";
+    throw new Error(message);
+  }
+
+  return uploadPayload;
 };
 
 function getCurrentVariantId() {
@@ -325,9 +300,8 @@ async function onCustomizeButtonClick(e) {
   target.classList.add("is-loading");
 
   try {
-    const productId = getProductId();
+    const productId = target.dataset.product;
     const variantId = getVariant();
-    console.log("Product ID", productId, "variant id", variantId);
     if (!productId && !variantId) {
       console.warn("Unable to determine productId for design config request");
       // if we can't continue, re-enable immediately
@@ -337,22 +311,18 @@ async function onCustomizeButtonClick(e) {
     }
 
     const dialog = ensureDialog();
-    const designerElement = ensureDesignerElement(dialog);
-    const designPayload = await fetchDesignPayload(productId, variantId);
+    showDialog(dialog);
 
-    applyDesignPayload(designerElement, designPayload);
+    const designPayload = await fetchDesignPayload(productId, variantId);
+    const designerElement = ensureDesignerElement(dialog);
+
+    applyDesignPayload(dialog, designerElement, designPayload);
 
     // When user finishes and adds to cart
     const cartHandler = async (event) => {
       const detail = (event && event.detail) || {};
-      const variantId = deriveVariantId(detail);
       const resolvedProductId = deriveProductId(detail, productId);
-      const configPayload =
-        detail.config ||
-        detail.customConfig ||
-        detail.designerConfig ||
-        detail.payload;
-
+      const configPayload = detail.design || {};
       if (!variantId) {
         console.warn("Designer cart event missing variant id", detail);
         designerElement.addEventListener("cart", cartHandler, { once: true });
@@ -365,9 +335,8 @@ async function onCustomizeButtonClick(e) {
         await addConfiguredItemToCart({
           variantId,
           productId: resolvedProductId,
-          quantity: normalizeCartQuantity(detail.quantity || detail.qty || 1),
+          quantity: 1,
           config: configPayload,
-          properties: sanitizeProperties(detail.properties || null),
         });
 
         closeDialog(dialog);
@@ -384,23 +353,32 @@ async function onCustomizeButtonClick(e) {
       }
     };
 
+    const onLoaded = () => {
+      const spinner = dialog.querySelector("pixobe-spinner");
+      spinner.remove();
+    };
+
+    const onCloseEvent = () => {
+      target.disabled = false;
+      target.classList.remove("is-loading");
+      closeDialog(dialog);
+    };
+
     designerElement.addEventListener("cart", cartHandler, { once: true });
-
+    // on loaded
+    designerElement.addEventListener("loaded", onLoaded, { once: true });
     // When user cancels customization
-    designerElement.addEventListener(
-      "cancel",
-      () => {
-        target.disabled = false;
-        target.classList.remove("is-loading");
-        closeDialog(dialog);
-      },
-      { once: true },
-    );
+    designerElement.addEventListener("cancel", onCloseEvent, { once: true });
 
-    showDialog(dialog);
+    // The End
   } catch (error) {
     console.error("Error while opening designer:", error);
-    // in case of any failure, restore the button state
+    // in case of any failure, restore the button state and remove spinner
+    const dialog = document.querySelector(DIALOG_SELECTOR);
+    if (dialog) {
+      removeSpinner(dialog);
+      closeDialog(dialog);
+    }
     target.disabled = false;
     target.classList.remove("is-loading");
   }
