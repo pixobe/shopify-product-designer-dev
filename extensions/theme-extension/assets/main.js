@@ -229,41 +229,12 @@ const fetchCartToken = async () => {
   }
 };
 
-const addConfiguredItemToCart = async ({
-  variantId,
-  productId,
-  quantity,
-  config,
-  properties,
-}) => {
-  const response = await fetch("/cart/add.js", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      items: [
-        {
-          id: variantId,
-          quantity: 1,
-        },
-      ],
-    }),
-  });
-
-  const addPayload = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    const message = (addPayload && addPayload.error) || "Unable to add item";
-    throw new Error(message);
-  }
-
-  const cartToken = await fetchCartToken();
-
+const addConfiguredItemToCart = async ({ id, quantity, config }) => {
   const form = new FormData();
   form.append("json", JSON.stringify(config ?? {}));
-  if (cartToken) {
-    form.append("cart_id", cartToken);
+
+  if (id) {
+    form.append("variant_id", id);
   }
 
   const res = await fetch(UPLOAD_CONFIG_ENDPOINT, {
@@ -275,6 +246,33 @@ const addConfiguredItemToCart = async ({
   if (!res.ok || !uploadPayload?.ok) {
     const message =
       uploadPayload?.error ?? uploadPayload?.message ?? "Upload failed";
+    throw new Error(message);
+  }
+
+  const fileGid = uploadPayload.fileGid;
+
+  const response = await fetch("/cart/add.js", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      items: [
+        {
+          id,
+          quantity,
+          properties: {
+            _pixobeid: fileGid,
+          },
+        },
+      ],
+    }),
+  });
+
+  const cartData = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message = (cartData && cartData.error) || "Unable to add item";
     throw new Error(message);
   }
 
@@ -291,7 +289,12 @@ function getCurrentVariantId() {
   return idInput.value; // this is the current variant ID
 }
 
-async function onCustomizeButtonClick(e) {
+/**
+ *
+ * @param {*} e
+ * @returns
+ */
+async function pcustomize(e) {
   const target = e.currentTarget;
   if (!target) return;
 
@@ -316,6 +319,8 @@ async function onCustomizeButtonClick(e) {
     const designPayload = await fetchDesignPayload(productId, variantId);
     const designerElement = ensureDesignerElement(dialog);
 
+    console.log("Customie", designPayload);
+
     applyDesignPayload(dialog, designerElement, designPayload);
 
     // When user finishes and adds to cart
@@ -331,17 +336,18 @@ async function onCustomizeButtonClick(e) {
         return;
       }
 
+      const id = variantId ? variantId : resolvedProductId;
+
       try {
         await addConfiguredItemToCart({
-          variantId,
-          productId: resolvedProductId,
+          id,
           quantity: 1,
           config: configPayload,
         });
 
         closeDialog(dialog);
       } catch (error) {
-        console.error("Unable to add configured item to cart", error);
+        console.error("Unable to add configured item to cart", error.message);
         if (typeof window !== "undefined" && window.alert) {
           window.alert("Unable to add item to cart. Please try again.");
         }

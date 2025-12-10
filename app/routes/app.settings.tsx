@@ -34,7 +34,7 @@ type SavedSettings = {
   snapAngle: string;
   customizationPrice: string;
   fonts: FontSummary[];
-  galleries: GallerySummary[];
+  gallery: GallerySummary[];
   supportInformation?: string;
 };
 
@@ -53,18 +53,18 @@ type GalleryMediaItem = {
 type GalleryEntry = {
   id: string;
   name: string;
-  media: GalleryMediaItem[];
+  images: GalleryMediaItem[];
 };
 
 type GallerySummary = {
   name: string;
-  media: { url: string }[];
+  images: { url: string }[];
 };
 
 const createGalleryEntry = (): GalleryEntry => ({
   id: globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2),
   name: "",
-  media: [],
+  images: [],
 });
 
 const SETTINGS_METAOBJECT_FETCH_SIZE = 1;
@@ -106,9 +106,9 @@ const toGalleryEntries = (galleries?: GallerySummary[]): GalleryEntry[] => {
   return galleries.map((gallery) => ({
     ...createGalleryEntry(),
     name: gallery.name ?? "",
-    media: Array.isArray(gallery.media)
-      ? gallery.media.map((media) =>
-        createGalleryMediaItemFromUrl(media.url ?? "")
+    images: Array.isArray(gallery.images)
+      ? gallery.images.map((image) =>
+        createGalleryMediaItemFromUrl(image.url ?? "")
       )
       : [],
   }));
@@ -371,7 +371,7 @@ export default function SettingsRoute() {
   const mediaFetcher = useFetcher<{ media: GalleryMediaItem[] }>();
   const mediaModalRef = useRef<HTMLElementTagNameMap["s-modal"] | null>(null);
   const [galleries, setGalleries] = useState<GalleryEntry[]>(() =>
-    toGalleryEntries(loaderSavedSettings?.galleries),
+    toGalleryEntries(loaderSavedSettings?.gallery),
   );
   const [activeGalleryId, setActiveGalleryId] = useState<string | null>(null);
   const [pendingMedia, setPendingMedia] = useState<Map<string, GalleryMediaItem>>(
@@ -387,14 +387,14 @@ export default function SettingsRoute() {
 
     const sanitizedGalleries: GallerySummary[] = galleries.map((gallery) => ({
       name: gallery.name.trim(),
-      media: gallery.media.map((item) => ({ url: item.url })),
+      images: gallery.images.map((item) => ({ url: item.url })),
     }));
 
     return {
       snapAngle,
       customizationPrice,
       fonts: sanitizedFonts,
-      galleries: sanitizedGalleries,
+      gallery: sanitizedGalleries,
       supportInformation: supportInformation.trim(),
     };
   };
@@ -441,7 +441,7 @@ export default function SettingsRoute() {
     setSnapAngle(nextSettings.snapAngle);
     setCustomizationPrice(nextSettings.customizationPrice);
     setFonts(() => toFontEntries(nextSettings.fonts));
-    setGalleries(() => toGalleryEntries(nextSettings.galleries));
+    setGalleries(() => toGalleryEntries(nextSettings.gallery));
     setSupportInformation(nextSettings.supportInformation ?? "");
     setShowSavedBanner(true);
   }, [settingsFetcher.data]);
@@ -532,11 +532,11 @@ export default function SettingsRoute() {
           return gallery;
         }
         const uniqueNewMedia = selectedItems.filter(
-          (item) => !gallery.media.some((existing) => existing.id === item.id),
+          (item) => !gallery.images.some((existing) => existing.id === item.id),
         );
         return {
           ...gallery,
-          media: [...gallery.media, ...uniqueNewMedia],
+          media: [...gallery.images, ...uniqueNewMedia],
         };
       }),
     );
@@ -547,7 +547,7 @@ export default function SettingsRoute() {
     setGalleries((previous) =>
       previous.map((gallery) =>
         gallery.id === galleryId
-          ? { ...gallery, media: gallery.media.filter((item) => item.id !== mediaId) }
+          ? { ...gallery, media: gallery.images.filter((item) => item.id !== mediaId) }
           : gallery,
       ),
     );
@@ -730,8 +730,8 @@ export default function SettingsRoute() {
                           justifyContent="space-between"
                         >
                           <s-text tone="neutral">
-                            {gallery.media.length > 0
-                              ? `${gallery.media.length} image${gallery.media.length > 1 ? "s" : ""
+                            {gallery.images.length > 0
+                              ? `${gallery.images.length} image${gallery.images.length > 1 ? "s" : ""
                               } added`
                               : "No images added yet."}
                           </s-text>
@@ -744,7 +744,7 @@ export default function SettingsRoute() {
                             Add images
                           </s-button>
                         </s-stack>
-                        {gallery.media.length > 0 ? (
+                        {gallery.images.length > 0 ? (
                           <div
                             style={{
                               display: "grid",
@@ -753,7 +753,7 @@ export default function SettingsRoute() {
                               gap: "12px",
                             }}
                           >
-                            {gallery.media.map((media) => (
+                            {gallery.images.map((media) => (
                               <div style={{ position: 'relative' }}>
                                 <s-box
                                   key={media.id}

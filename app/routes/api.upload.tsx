@@ -34,14 +34,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const form = await request.formData();
     let file = form.get("file") as File | null;
     const jsonText = form.get("json") as string | null;
-    const cartId = sanitizeCartId(form.get("cart_id"));
-    const targetFileName = cartId ? `${cartId}.json` : "customization.json";
+    const variantId = sanitizeCartId(form.get("variant_id"));
+    const targetFileName = variantId ? `${variantId}_pixobe.json` : "customization.json";
 
-    console.log(" Json file----------------------------- ", jsonText);
 
     if (!file && jsonText) {
         file = new File([jsonText], targetFileName, { type: "application/json" });
-    } else if (file && cartId) {
+    } else if (file && variantId) {
         const buffer = await file.arrayBuffer();
         file = new File([buffer], targetFileName, { type: file.type || "application/json" });
     }

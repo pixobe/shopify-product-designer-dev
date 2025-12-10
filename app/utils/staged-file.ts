@@ -171,7 +171,7 @@ export async function uploadFileToStaged(admin: any, file: any): Promise<any> {
         {
           contentType: "FILE",
           originalSource: target.resourceUrl,
-          alt: "Customization JSON",
+          alt: "Pixobe Product Customization",
         },
       ],
     },
