@@ -76,9 +76,7 @@ export default function OrderCustomizationsPage() {
         throw new Error(payload.message || "Unable to load the customization.");
       }
 
-      if (!payload.ok) {
-        throw new Error(payload.error || "Unable to load the customization.");
-      }
+      console.log("Payload is ", payload)
 
       setCustomization(payload);
       setStatus("success");
@@ -131,7 +129,10 @@ export default function OrderCustomizationsPage() {
 
         {status === "success" && customization && (
           <s-section>
-            <p-viewer data={customization.fileData}></p-viewer>
+            <p-viewer
+              media={customization.media}
+              data={customization.fileData}
+              config={customization.config}></p-viewer>
           </s-section>
         )}
 

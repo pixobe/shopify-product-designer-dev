@@ -1,4 +1,5 @@
 {
   "name": "View Customization",
-  "view-design": "View customization for {{orderId}}"
+  "title": "Open the product’s customization details for this order.",
+  "linkTitle": "Open Customization"
 }

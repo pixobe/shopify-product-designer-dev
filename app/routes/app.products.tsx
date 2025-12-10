@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
 import {
   data,
   useFetcher,
   useLoaderData,
+  useLocation,
   useNavigate,
   useRouteError,
 } from "react-router";
@@ -33,7 +34,29 @@ export default function ProductsPage() {
   const loaderData = useLoaderData<typeof loader>();
   const fetcher = useFetcher<ProductsPayload>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [query, setQuery] = useState("");
+  const autoLoadedProductRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const productParam = params.get("productId")?.trim() ?? "";
+
+    if (!productParam) {
+      autoLoadedProductRef.current = null;
+      return;
+    }
+
+    if (autoLoadedProductRef.current === productParam) {
+      return;
+    }
+
+    setQuery(productParam);
+    const searchParams = new URLSearchParams();
+    searchParams.set("query", productParam);
+    fetcher.load(`/api/products?${searchParams.toString()}`);
+    autoLoadedProductRef.current = productParam;
+  }, [location.search, fetcher]);
 
   const products = useMemo(
     () => fetcher.data?.products ?? loaderData.products ?? [],

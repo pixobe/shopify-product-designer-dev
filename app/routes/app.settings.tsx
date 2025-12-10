@@ -33,6 +33,7 @@ type FontSummary = {
 type SavedSettings = {
   snapAngle: string;
   customizationPrice: string;
+  etching?: boolean;
   fonts: FontSummary[];
   gallery: GallerySummary[];
   supportInformation?: string;
@@ -365,6 +366,11 @@ export default function SettingsRoute() {
   const [supportInformation, setSupportInformation] = useState(
     () => loaderSavedSettings?.supportInformation ?? "",
   );
+  const [etching, setEtching] = useState(
+    () => loaderSavedSettings?.etching ?? false,
+  );
+
+
   const [fonts, setFonts] = useState<FontEntry[]>(() =>
     toFontEntries(loaderSavedSettings?.fonts),
   );
@@ -393,6 +399,7 @@ export default function SettingsRoute() {
     return {
       snapAngle,
       customizationPrice,
+      etching,
       fonts: sanitizedFonts,
       gallery: sanitizedGalleries,
       supportInformation: supportInformation.trim(),
@@ -448,6 +455,7 @@ export default function SettingsRoute() {
 
   const isSavingSettings = settingsFetcher.state === "submitting";
   const settingsErrorMessage = settingsFetcher.data?.error ?? null;
+
   const handleFontFieldChange = (
     id: string,
     field: keyof Omit<FontEntry, "id">,
@@ -536,7 +544,7 @@ export default function SettingsRoute() {
         );
         return {
           ...gallery,
-          media: [...gallery.images, ...uniqueNewMedia],
+          images: [...gallery.images, ...uniqueNewMedia],
         };
       }),
     );
@@ -577,6 +585,12 @@ export default function SettingsRoute() {
               name="customizationPrice"
               value={customizationPrice}
               onInput={(event) => setCustomizationPrice(event.currentTarget.value)}
+            />
+            <s-switch
+              label="Enable Etching"
+              details="Activates the laser-etching effect for added objects."
+              name="etching"
+              value="enabled"
             />
           </s-section>
           <s-section heading="Customer Support Information">

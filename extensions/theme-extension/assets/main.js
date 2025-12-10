@@ -319,8 +319,6 @@ async function pcustomize(e) {
     const designPayload = await fetchDesignPayload(productId, variantId);
     const designerElement = ensureDesignerElement(dialog);
 
-    console.log("Customie", designPayload);
-
     applyDesignPayload(dialog, designerElement, designPayload);
 
     // When user finishes and adds to cart

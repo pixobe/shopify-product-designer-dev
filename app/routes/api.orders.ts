@@ -2,6 +2,10 @@ import { data, type LoaderFunctionArgs } from "react-router";
 
 import { authenticate } from "../shopify.server";
 import { PIXOBE_CART_CONFIG_PROPERTY_KEY } from "../constants/customization";
+import {
+  loadPixobeDesignSettings,
+  loadPixobeProductMedia,
+} from "../utils/design-config";
 
 const ORDER_ID_PREFIX = "gid://shopify/Order/";
 
@@ -23,18 +27,19 @@ query OrderCustomization($id: ID!) {
     id
     name
     lineItems(first: 50) {
-            nodes {
-              variant {
-                product {
-                  id
-                }
-              }
-              customAttributes {
-                key
-                value
-              }
-            }
+      nodes {
+        variant {
+          id
+          product {
+            id
           }
+        }
+        customAttributes {
+          key
+          value
+        }
+      }
+    }
   }
 }
 `;
@@ -124,6 +129,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return data({ message: `_pixobeid attribute empty on ${order.id}` }, 404);
   }
 
+  const variant = lineItemWithAttribute.variant ?? null;
+  const productId = variant?.product?.id ?? null;
+  const variantId = variant?.id ?? null;
+
   const fileResponse = await admin.graphql(FILE_QUERY, {
     variables: { id: fileId },
   });
@@ -180,16 +189,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     );
   }
 
+  const configPromise = loadPixobeDesignSettings(admin);
+  const mediaPromise = loadPixobeProductMedia(admin, productId, variantId);
+  const [config, media] = await Promise.all([configPromise, mediaPromise]);
+
   return jsonResponse({
-    ok: true,
-    order: { id: order.id, name: order.name ?? null },
-    file: {
-      id: genericFile.id,
-      url: genericFile.url,
-      mimeType: genericFile.mimeType ?? null,
-      fileStatus: genericFile.fileStatus ?? null,
-    },
     fileData,
+    config,
+    media,
   });
 };
 
