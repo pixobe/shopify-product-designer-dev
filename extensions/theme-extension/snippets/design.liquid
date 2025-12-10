@@ -3,7 +3,7 @@
     type="button"
     class="product-customize-button"
     data-product="{{ product.id }}"
-    onclick="pcustomize(event);"
+    onclick="openPixobeCustomization(event);"
   >
     <span>
       {{ 'button.customize' | t }}
@@ -13,5 +13,4 @@
     </div>
   </button>
 </div>
-{{ product.metafields.app.pixobe_media_config }}
 <dialog data-pixobe-dialog></dialog>

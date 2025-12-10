@@ -294,7 +294,7 @@ function getCurrentVariantId() {
  * @param {*} e
  * @returns
  */
-async function pcustomize(e) {
+async function openPixobeCustomization(e) {
   const target = e.currentTarget;
   if (!target) return;
 
@@ -386,4 +386,30 @@ async function pcustomize(e) {
     target.disabled = false;
     target.classList.remove("is-loading");
   }
+}
+
+const evaluateCustomizeButtonVisibility = async (button) => {
+  const productId = button?.dataset?.product;
+  if (!productId) {
+    return;
+  }
+
+  const variantId = getVariant();
+  const designPayload = await fetchDesignPayload(productId, variantId);
+  const hasMedia = Array.isArray(designPayload.media) && designPayload.media.length > 0;
+
+  button.hidden = !hasMedia;
+};
+
+const initCustomizeButtons = () => {
+  const customizeButtons = document.querySelectorAll(".product-customize-button");
+  customizeButtons.forEach((button) => {
+    evaluateCustomizeButtonVisibility(button);
+  });
+};
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initCustomizeButtons);
+} else {
+  initCustomizeButtons();
 }
