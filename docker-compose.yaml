@@ -1,7 +1,7 @@
 services:
   pixobe-api:
     restart: always
-    image: pixobe.com/shopify-product-designer-dev:1.0
+    image: pixobe.com/shopify-product-designer-dev:${APP_VERSION}
     ports:
       - 3003:3000
     environment:
