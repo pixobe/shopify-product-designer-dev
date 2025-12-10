@@ -1,0 +1,12 @@
+services:
+  pixobe-api:
+    restart: always
+    image: pixobe.com/shopify-product-designer-dev:1.0
+    ports:
+      - 3003:3000
+    environment:
+      - SHOPIFY_API_KEY=${SHOPIFY_API_KEY}
+      - SHOPIFY_API_SECRET=${SHOPIFY_API_SECRET}
+      - SHOPIFY_APP_URL=${SHOPIFY_APP_URL}
+      - DATABASE_URL=${DATABASE_URL}
+      - SCOPES=${SCOPES}
