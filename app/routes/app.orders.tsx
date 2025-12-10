@@ -147,6 +147,7 @@ export default function OrderCustomizationsPage() {
                 background={displayBg}
                 media={customization.media}
                 data={customization.fileData}
+                filename={query}
                 config={customization.config}></p-viewer>
             </s-grid>
           </s-section>
