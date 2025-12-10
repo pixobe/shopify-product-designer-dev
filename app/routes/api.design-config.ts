@@ -185,7 +185,6 @@ const fetchProductMetafield = async (
   productId: string,
   variantId?: string | null,
 ) => {
-  console.log("Variant ID :::", variantId, "productD:::", productId);
   const response = await admin.graphql(
     `#graphql
       query DesignConfigProduct(
