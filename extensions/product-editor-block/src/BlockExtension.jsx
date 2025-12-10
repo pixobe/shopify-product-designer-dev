@@ -10,8 +10,6 @@ function Extension() {
     data,
     extension: { target },
   } = shopify;
-  console.log({ data });
-
   const selectedProduct = data?.selected;
   const productId = selectedProduct?.[0]?.id;
 

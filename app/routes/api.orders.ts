@@ -96,8 +96,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const order = orderResult.data?.order;
 
-  console.log(" Order data is ", order);
-
   if (!order) {
     return data({ message: "Order not found" }, 404);
   }

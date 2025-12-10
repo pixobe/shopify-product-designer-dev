@@ -24,6 +24,9 @@ export default function OrderCustomizationsPage() {
     useState<OrderCustomizationSuccess | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+
+  const [displayBg, setDisplayBg] = useState(true);
+
   // -------------------------------------------
   // 🔥 AUTO-LOAD ORDER IF order_id EXISTS IN URL
   // -------------------------------------------
@@ -76,8 +79,6 @@ export default function OrderCustomizationsPage() {
         throw new Error(payload.message || "Unable to load the customization.");
       }
 
-      console.log("Payload is ", payload)
-
       setCustomization(payload);
       setStatus("success");
     } catch (err) {
@@ -129,10 +130,25 @@ export default function OrderCustomizationsPage() {
 
         {status === "success" && customization && (
           <s-section>
-            <p-viewer
-              media={customization.media}
-              data={customization.fileData}
-              config={customization.config}></p-viewer>
+            <s-grid>
+              <s-switch
+                label="Show Product Media"
+                details="Hide or display the product media in the downloaded customization file."
+                checked={displayBg}
+                defaultChecked={true}
+                // For web components, `onChange` is usually safer than `onInput`
+                onInput={(event: any) => {
+                  // Polaris web components typically expose `checked` on the target
+                  const target = event.currentTarget as HTMLInputElement;
+                  setDisplayBg(target.checked);
+                }}
+              />
+              <p-viewer
+                background={displayBg}
+                media={customization.media}
+                data={customization.fileData}
+                config={customization.config}></p-viewer>
+            </s-grid>
           </s-section>
         )}
 
