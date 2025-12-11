@@ -11,7 +11,9 @@ export default function App() {
           rel="stylesheet"
           href="https://cdn.shopify.com/static/fonts/inter/v4/styles.css"
         />
-        <script type="module" src="https://localapp.pixobe.com/build/product-designer.esm.js" data-stencil></script>
+        {/* <script type="module" src="https://dev.product-designer-c4c.pages.dev/build/product-designer.esm.js"></script> */}
+        <script type="module" src="https://localapp.pixobe.com/build/product-designer.esm.js" ></script>
+
         <Meta />
         <Links />
       </head>

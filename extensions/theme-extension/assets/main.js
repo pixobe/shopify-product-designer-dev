@@ -14,9 +14,12 @@ const getCurrentVariantId = () => {
   return idInput?.value || null;
 };
 
-const getVariant = () => {
+const getVariant = (defaultValue = null) => {
   const param = new URLSearchParams(window.location.search).get("variant");
-  return normalizeVariantIdValue(param) || getCurrentVariantId();
+  const normalizedDefault = normalizeVariantIdValue(defaultValue);
+  return (
+    normalizeVariantIdValue(param) || getCurrentVariantId() || normalizedDefault
+  );
 };
 
 const ensureDialog = () => {
@@ -141,7 +144,8 @@ async function openPixobeCustomization(e) {
 
   try {
     const productId = target.dataset.product;
-    const variantId = getVariant();
+    const buttonVariantId = normalizeVariantIdValue(target.dataset.variant);
+    const variantId = getVariant(buttonVariantId);
 
     if (!productId && !variantId) {
       resetButton();
@@ -209,15 +213,3 @@ async function openPixobeCustomization(e) {
     resetButton();
   }
 }
-
-const evaluateCustomizeButtonVisibility = async (button) => {
-  const productId = button?.dataset?.product;
-  if (!productId) return;
-
-  const variantId = getVariant();
-  const designPayload = await fetchDesignPayload(productId, variantId);
-  const hasMedia =
-    Array.isArray(designPayload.media) && designPayload.media.length > 0;
-
-  button.hidden = !hasMedia;
-};

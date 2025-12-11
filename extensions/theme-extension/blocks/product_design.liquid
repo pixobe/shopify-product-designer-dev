@@ -4,9 +4,40 @@
 <script src="{{ 'main.js' | asset_url }}" async></script>
 
 {% assign media_items = product.metafields['$app'].product_media.value %}
-{% if media_items %}
-  {% render 'design' %}
-{% endif %}
+{% assign app_admin_url = 'https://admin.shopify.com/store/'
+  | append: shop.permanent_domain
+  | remove: '.myshopify.com'
+  | append: '/apps/product-designer-dev/app/customize?id=gid%3A%2F%2Fshopify%2FProduct%2F'
+  | append: product.id
+%}
+
+<div class="pixobe-product-design-block" {{ block.shopify_attributes }}>
+  {% if media_items %}
+    {% render 'design',
+      button_border_radius: block.settings.button_border_radius,
+      button_full_width: block.settings.button_full_width,
+      button_background_color: block.settings.colour,
+      button_text_color: block.settings.button_text_color
+    %}
+  {% else %}
+    {% if request.design_mode %}
+      <div class="pixobe-empty-state" role="status">
+        <p class="pixobe-empty-state__title">{{ 'pixobe.empty_state.title' | t }}</p>
+        <p class="pixobe-empty-state__body">{{ 'pixobe.empty_state.body' | t }}</p>
+        <div class="pixobe-empty-state__actions">
+          <a
+            href="{{ app_admin_url }}"
+            class="pixobe-empty-state__link"
+            target="_blank"
+            rel="noreferrer"
+          >
+            {{ 'pixobe.empty_state.enable_customization' | t }}
+          </a>
+        </div>
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
 
 {% schema %}
 {
@@ -14,7 +45,10 @@
   "target": "section",
   "settings": [
     { "type": "product", "id": "product", "label": "product", "autofill": true },
-    { "type": "color", "id": "colour", "label": "Button Colour", "default": "#000000" }
+    { "type": "color", "id": "colour", "label": "Button colour", "default": "#000000" },
+    { "type": "color", "id": "button_text_color", "label": "Button text colour", "default": "#ffffff" },
+    { "type": "number", "id": "button_border_radius", "label": "Button border radius", "default": 14 },
+    { "type": "checkbox", "id": "button_full_width", "label": "Full width button", "default": false }
   ]
 }
 {% endschema %}

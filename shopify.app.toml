@@ -27,7 +27,7 @@ scopes = "read_metaobjects,read_orders,read_products,unauthenticated_read_metaob
 [auth]
 redirect_urls = [
   "https://mactunnel.pixobe.com/auth/callback",
-  "https://mactunnel.pixobe.com/auth/shopify/callback",
+  "https://mactunnel.pixobe.com/shopify/callback",
   "https://mactunnel.pixobe.com/api/auth/callback",
 ]
 

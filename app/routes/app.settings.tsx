@@ -308,6 +308,7 @@ export const loader = async ({
 
   const savedSettings = parseSavedSettingsField(configField?.value ?? null);
 
+  console.log("settings is ", savedSettings)
   return {
     savedSettings,
     metaobjectId:
@@ -447,6 +448,7 @@ export default function SettingsRoute() {
     }
     setSnapAngle(nextSettings.snapAngle);
     setCustomizationPrice(nextSettings.customizationPrice);
+    setEtching(nextSettings.etching ?? false);
     setFonts(() => toFontEntries(nextSettings.fonts));
     setGalleries(() => toGalleryEntries(nextSettings.gallery));
     setSupportInformation(nextSettings.supportInformation ?? "");
@@ -480,6 +482,26 @@ export default function SettingsRoute() {
     () => new Set(pendingMedia.keys()),
     [pendingMedia],
   );
+
+  const extractBooleanValue = (event: any, fallback: boolean) => {
+    if (typeof event?.detail?.checked === "boolean") {
+      return event.detail.checked;
+    }
+    if (typeof event?.currentTarget?.checked === "boolean") {
+      return event.currentTarget.checked;
+    }
+    if (typeof event?.target?.checked === "boolean") {
+      return event.target.checked;
+    }
+    if (typeof event?.detail?.value === "boolean") {
+      return event.detail.value;
+    }
+    return !fallback;
+  };
+
+  const handleEtchingToggle = (event: any) => {
+    setEtching((previous) => extractBooleanValue(event, previous));
+  };
 
   const handleGalleryFieldChange = (
     id: string,
@@ -591,6 +613,9 @@ export default function SettingsRoute() {
               details="Activates the laser-etching effect for added objects."
               name="etching"
               value="enabled"
+              checked={etching}
+              onInput={handleEtchingToggle}
+              onChange={handleEtchingToggle}
             />
           </s-section>
           <s-section heading="Customer Support Information">
@@ -768,9 +793,8 @@ export default function SettingsRoute() {
                             }}
                           >
                             {gallery.images.map((media) => (
-                              <div style={{ position: 'relative' }}>
+                              <div key={media.id} style={{ position: 'relative' }}>
                                 <s-box
-                                  key={media.id}
                                   border="base"
                                   borderRadius="base"
                                   padding="base"

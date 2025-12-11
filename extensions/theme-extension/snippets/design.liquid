@@ -1,9 +1,28 @@
-<div class="product-form-buttons">
+{% liquid
+  assign button_radius_value = button_border_radius | default: 14
+  assign button_bg_color = button_background_color | default: '#000000'
+  assign button_text_color_value = button_text_color | default: '#ffffff'
+  assign full_width_class = ''
+  if button_full_width
+    assign full_width_class = ' product-form-buttons--full'
+  endif
+%}
+
+{% assign current_variant = product.selected_or_first_available_variant %}
+
+<div class="product-form-buttons{{ full_width_class }}">
   <button
     type="button"
     class="product-customize-button"
     data-product="{{ product.id }}"
+
+    data-variant="{{current_variant.id}}"
     onclick="openPixobeCustomization(event);"
+    style="
+      --button-radius: {{ button_radius_value }}px;
+      --button-bg: {{ button_bg_color }};
+      --button-text-color: {{ button_text_color_value }};
+    "
   >
     <span>
       {{ 'button.customize' | t }}

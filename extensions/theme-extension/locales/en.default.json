@@ -1,5 +1,12 @@
 {
   "button": {
     "customize": "Customize"
+  },
+  "pixobe": {
+    "empty_state": {
+      "title": "Customization is not available yet",
+      "body": "Add media to this product in Pixobe Product Designer app to enable the designer button.",
+      "enable_customization": "Enable customization"
+    }
   }
 }
