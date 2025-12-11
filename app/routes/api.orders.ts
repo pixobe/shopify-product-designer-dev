@@ -110,7 +110,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   if (!lineItemWithAttribute) {
     return data(
       {
-        message: `_pixobeid attribute not set on any line item for ${order.id}`,
+        message: "The item is not customized",
       },
       404,
     );

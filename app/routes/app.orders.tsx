@@ -1,5 +1,10 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import FileSaver from 'file-saver';
 
+
+/**
+ * 
+ */
 type OrderCustomizationSuccess = {
   ok: true;
   order: {
@@ -26,10 +31,30 @@ export default function OrderCustomizationsPage() {
 
 
   const [displayBg, setDisplayBg] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
-  // -------------------------------------------
-  // 🔥 AUTO-LOAD ORDER IF order_id EXISTS IN URL
-  // -------------------------------------------
+  const viewerRef = useRef<any>(null);
+
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (viewer) {
+      const handleDownload = (e: CustomEvent) => {
+        FileSaver.saveAs(e.detail, `${query}.svg`);
+      };
+
+      viewer.addEventListener('download', handleDownload);
+
+      viewer.addEventListener('initialized', (e: any) => {
+        setInitialized(e.detail);
+      });
+
+      return () => {
+        viewer.removeEventListener('download', handleDownload);
+      };
+    }
+  }, [customization]);
+
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const rawOrderId = params.get("order_id");
@@ -89,9 +114,7 @@ export default function OrderCustomizationsPage() {
     }
   };
 
-  // -------------------------------------------
-  // 🔥 FORM-HANDLER (manual search)
-  // -------------------------------------------
+
   const handleSearch = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     searchOrder(query.trim());
@@ -122,40 +145,44 @@ export default function OrderCustomizationsPage() {
       </s-section>
 
       <s-section heading="Customization">
-        {status === "loading" && <s-text>Loading...</s-text>}
 
-        {status === "error" && error && (
-          <s-text tone="critical">{error}</s-text>
-        )}
+        <s-grid alignItems="center">
+          {status === "loading" && <s-spinner accessibilityLabel="Loading" size="large-100" />}
 
-        {status === "success" && customization && (
-          <s-section>
-            <s-grid>
-              <s-switch
-                label="Show Product Media"
-                details="Hide or display the product media in the downloaded customization file."
-                checked={displayBg}
-                defaultChecked={true}
-                // For web components, `onChange` is usually safer than `onInput`
-                onInput={(event: any) => {
-                  // Polaris web components typically expose `checked` on the target
-                  const target = event.currentTarget as HTMLInputElement;
-                  setDisplayBg(target.checked);
-                }}
-              />
-              <p-viewer
-                background={displayBg}
-                media={customization.media}
-                data={customization.fileData}
-                filename={query}
-                config={customization.config}></p-viewer>
-            </s-grid>
-          </s-section>
-        )}
+          {status === "error" && error && (
+            <s-text tone="critical">{error}</s-text>
+          )}
+          {status === "success" && customization && (
+            <s-section>
+              <s-grid>
+                <s-switch
+                  label="Show Product Media"
+                  details="Hide or display the product media in the downloaded customization file."
+                  checked={displayBg}
+                  defaultChecked={true}
+                  // For web components, `onChange` is usually safer than `onInput`
+                  onInput={(event: any) => {
+                    // Polaris web components typically expose `checked` on the target
+                    const target = event.currentTarget as HTMLInputElement;
+                    setDisplayBg(target.checked);
+                  }}
+                />
+                {initialized === false && <s-spinner accessibilityLabel="Loading" size="large-100" />}
+                <p-viewer
+                  ref={viewerRef}
+                  background={displayBg}
+                  media={customization.media}
+                  data={customization.fileData}
+                  config={customization.config}></p-viewer>
+              </s-grid>
+            </s-section>
+          )}
 
-        {status === "idle" && (
-          <s-text>Enter an order ID to preview its saved customization.</s-text>
-        )}
+          {status === "idle" && (
+            <s-text>Enter an order ID to preview its saved customization.</s-text>
+          )}
+        </s-grid>
+
       </s-section>
     </s-page>
   );
