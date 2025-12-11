@@ -1,4 +1,6 @@
 {{ 'main.css' | asset_url | stylesheet_tag }}
+
+<script src="{{ 'product-designer.esm.js' | asset_url }}" type="module" async></script>
 <script src="{{ 'main.js' | asset_url }}" async></script>
 
 {% assign media_items = product.metafields['$app'].product_media.value %}
@@ -16,6 +18,3 @@
   ]
 }
 {% endschema %}
-
-<script src="https://localapp.pixobe.com/build/product-designer.esm.js" type="module" async></script>
-<script src="https://cdn.shopify.com/shopifycloud/polaris.js" defer></script>

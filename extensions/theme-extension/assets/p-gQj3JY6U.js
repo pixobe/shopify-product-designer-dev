@@ -1,0 +1,1 @@
+import{J as t,a as e,c}from"./p-BOTfGNKw.js";const r={text:"Edit Me",fontFamily:"Arial",stroke:"#cccccc"};class s extends e{static ownDefaults=r;constructor(t,e){super(t,e)}static createControls(){return{controls:c({rotate:!0,edit:!0,expand:!0,delete:!0})}}static create(t){return new s(t.text,t)}}t.setClass(s);export{s as P}

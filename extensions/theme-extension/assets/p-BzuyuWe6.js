@@ -1,0 +1,1 @@
+function t(t){const o=t.getBoundingClientRect(),a=window.innerWidth;let c="auto",n="auto";window.innerHeight-(o.bottom+2)>=264?c="calc(100% + 2px)":o.top-2>=264?n="calc(100% + 2px)":c=`${Math.max((o.height-264)/2,0)}px`;let u="0",e="auto";return a-(o.left+200+2)<0&&(u="auto",e="0"),{top:c,bottom:n,left:u,right:e}}export{t as c}

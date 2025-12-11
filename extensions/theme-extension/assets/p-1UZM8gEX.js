@@ -1,0 +1,1 @@
+import{J as t,C as s,c as a}from"./p-BOTfGNKw.js";import{I as e}from"./p-CTas5jXM.js";class r extends s{static createControls(){return{controls:a({rotate:!0,edit:!0,expand:!0,delete:!0})}}static defaults={};constructor(t,s){super(t,s)}static async from(t,s){let a;return a=t instanceof File?await e.fromFile(t):await e.fromURL(t),new r(a,s)}}t.setClass(r);export{r as P}
