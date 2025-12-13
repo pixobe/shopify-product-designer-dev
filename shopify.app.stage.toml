@@ -1,8 +1,8 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "ab0f7182709851ef7296d79ecb2b8300"
-name = "Pixobe Product Designer"
-application_url = "https://mactunnel.pixobe.com.pixobe.com"
+client_id = "587fe5fea00218b568ca2832e1fa3f92"
+name = "Pixobe Product Designer Stage"
+application_url = "https://mactunnel.pixobe.com"
 embedded = true
 handle = "pixobe-product-designer"
 
@@ -26,9 +26,9 @@ scopes = "read_metaobjects,read_orders,read_products,unauthenticated_read_metaob
 
 [auth]
 redirect_urls = [
-  "https://mactunnel.pixobe.com.pixobe.com/auth/callback",
-  "https://mactunnel.pixobe.com.pixobe.com/shopify/callback",
-  "https://mactunnel.pixobe.com.pixobe.com/api/auth/callback",
+    "https://mactunnel.pixobe.com.pixobe.com/auth/callback",
+    "https://mactunnel.pixobe.com.pixobe.com/shopify/callback",
+    "https://mactunnel.pixobe.com.pixobe.com/api/auth/callback",
 ]
 
 [app_proxy]

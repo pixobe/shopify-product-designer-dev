@@ -1,4 +1,4 @@
-import { type LoaderFunctionArgs } from "react-router";
+import { data, type LoaderFunctionArgs } from "react-router";
 
 import { authenticate } from "../shopify.server";
 import {
@@ -22,35 +22,45 @@ const normalizeVariantId = (value: string) =>
   value.startsWith(VARIANT_ID_PREFIX) ? value : `${VARIANT_ID_PREFIX}${value}`;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const url = new URL(request.url);
-  const shop = url.searchParams.get("shop");
+  try {
+    const url = new URL(request.url);
+    const shop = url.searchParams.get("shop");
 
-  if (!shop) {
-    return Response.json(
-      { message: "Shop ID missing", success: false },
-      { status: 400 },
+    if (!shop) {
+      return Response.json(
+        { message: "Shop ID missing", success: false },
+        { status: 400 },
+      );
+    }
+
+    const { admin } = await authenticate.public.appProxy(request);
+
+    const rawProductId = url.searchParams.get("productId")?.trim();
+    const productId =
+      rawProductId && looksLikeProductId(rawProductId)
+        ? normalizeProductId(rawProductId)
+        : null;
+
+    const rawVariantId = url.searchParams.get("variantId")?.trim();
+    const variantId =
+      rawVariantId && looksLikeVariantId(rawVariantId)
+        ? normalizeVariantId(rawVariantId)
+        : null;
+
+    const config = await loadPixobeDesignSettings(admin);
+    const media = await loadPixobeProductMedia(admin, productId, variantId);
+
+    return {
+      config,
+      media,
+    };
+  } catch (e: any) {
+    console.error(e);
+    return data(
+      {
+        message: e.message,
+      },
+      400,
     );
   }
-
-  const { admin } = await authenticate.public.appProxy(request);
-
-  const rawProductId = url.searchParams.get("productId")?.trim();
-  const productId =
-    rawProductId && looksLikeProductId(rawProductId)
-      ? normalizeProductId(rawProductId)
-      : null;
-
-  const rawVariantId = url.searchParams.get("variantId")?.trim();
-  const variantId =
-    rawVariantId && looksLikeVariantId(rawVariantId)
-      ? normalizeVariantId(rawVariantId)
-      : null;
-
-  const config = await loadPixobeDesignSettings(admin);
-  const media = await loadPixobeProductMedia(admin, productId, variantId);
-
-  return {
-    config,
-    media,
-  };
 };

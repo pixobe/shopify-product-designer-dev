@@ -35,7 +35,7 @@ const ensureDialog = () => {
 const showDialog = (dialog) => {
   if (dialog.open) return;
 
-  dialog.replaceChildren(document.createElement("pixobe-spinner"));
+  dialog.replaceChildren(document.createElement("p-spinner"));
   if (typeof dialog.showModal === "function") {
     dialog.showModal();
   } else {
@@ -193,7 +193,7 @@ async function openPixobeCustomization(e) {
     };
 
     const onLoaded = () => {
-      dialog.querySelector("pixobe-spinner")?.remove();
+      dialog.querySelector("p-spinner")?.remove();
     };
 
     const onCloseEvent = () => {
@@ -207,7 +207,7 @@ async function openPixobeCustomization(e) {
   } catch (error) {
     const dialog = document.querySelector(DIALOG_SELECTOR);
     if (dialog) {
-      dialog.querySelector("pixobe-spinner")?.remove();
+      dialog.querySelector("p-spinner")?.remove();
       closeDialog(dialog);
     }
     resetButton();
