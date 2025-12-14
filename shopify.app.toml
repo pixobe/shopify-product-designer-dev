@@ -75,12 +75,3 @@ description = "Ordered list of Pixobe media entries attached to the product."
 [product.metafields.app.product_media.access]
 storefront = "public_read"
 admin = "merchant_read_write"
-
-[shop.metafields.app.app_slug]
-type = "single_line_text_field"
-name = "Pixobe Admin App Slug"
-description = "Admin app handle used to build links back to Pixobe."
-
-[shop.metafields.app.app_slug.access]
-storefront = "public_read"
-admin = "merchant_read_write"

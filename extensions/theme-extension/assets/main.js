@@ -57,7 +57,11 @@ const applyDesignPayload = (dialog, designer, payload) => {
   designer.config = payload?.config ?? {};
   designer.media = Array.isArray(payload?.media) ? payload.media : [];
   designer.meta = { name: "Round Neck T-Shirt" };
-  designer.labels = {};
+  try {
+    designer.labels = window?.pixobeLabels ?? {};
+  } catch (e) {
+    designer.labels = {};
+  }
   dialog.appendChild(designer);
 };
 

@@ -53,6 +53,15 @@ name = "Product Media config json"
 type = "json"
 description = "Arbitrary Pixobe configuration copied verbatim into the object's `config`."
 
+[product.metafields.app.product_media]
+type = "list.metaobject_reference<$app:product_media_item>"
+name = "Pixobe Media Config"
+description = "Ordered list of Pixobe media entries attached to the product."
+
+[product.metafields.app.product_media.access]
+storefront = "public_read"
+admin = "merchant_read_write"
+
 [metaobjects.app.settings]
 name = "Pixobe Product Settings"
 display_name_field = "config"
@@ -66,21 +75,3 @@ storefront = "public_read"
 name = "Settings JSON to store Pixobe Product Designer app level configuration"
 type = "json"
 description = "Serialized default configuration captured from the settings form."
-
-[product.metafields.app.product_media]
-type = "list.metaobject_reference<$app:product_media_item>"
-name = "Pixobe Media Config"
-description = "Ordered list of Pixobe media entries attached to the product."
-
-[product.metafields.app.product_media.access]
-storefront = "public_read"
-admin = "merchant_read_write"
-
-[shop.metafields.app.app_slug]
-type = "single_line_text_field"
-name = "Pixobe Admin App Slug"
-description = "Admin app handle used to build links back to Pixobe."
-
-[shop.metafields.app.app_slug.access]
-storefront = "public_read"
-admin = "merchant_read_write"
