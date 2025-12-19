@@ -1,5 +1,6 @@
 const DESIGN_CONFIG_ENDPOINT = "/apps/pixobe-product-designer/design-config";
 const UPLOAD_CONFIG_ENDPOINT = "/apps/pixobe-product-designer/upload";
+const CART_CONFIG_ENDPOINT = "/apps/product-designer-dev/cart-config";
 const DIALOG_SELECTOR = "[data-pixobe-dialog]";
 const PIXOBE_DESIGNER_TAG = "product-designer";
 
@@ -56,6 +57,9 @@ const closeDialog = (dialog) => {
 const applyDesignPayload = (dialog, designer, payload) => {
   designer.config = payload?.config ?? {};
   designer.media = Array.isArray(payload?.media) ? payload.media : [];
+  if (payload && Object.prototype.hasOwnProperty.call(payload, "design")) {
+    designer.design = payload?.design ?? null;
+  }
   designer.meta = { name: "Round Neck T-Shirt" };
   try {
     designer.labels = window?.pixobeLabels ?? {};
@@ -81,6 +85,62 @@ const fetchDesignPayload = async (productId, variantId) => {
     };
   } catch {
     return { config: {}, media: [] };
+  }
+};
+
+const resolveCustomizationTrigger = (candidate) => {
+  if (!candidate) return null;
+
+  if (
+    candidate.nodeType === 3 &&
+    candidate.parentElement &&
+    typeof candidate.parentElement.closest === "function"
+  ) {
+    candidate = candidate.parentElement;
+  }
+
+  if (typeof candidate.matches === "function") {
+    if (candidate.matches("[data-pixobeid]")) {
+      return candidate;
+    }
+  }
+
+  if (typeof candidate.closest === "function") {
+    return candidate.closest("[data-pixobeid]");
+  }
+
+  return null;
+};
+
+const fetchCartCustomizationPayload = async ({ fileId, variantId }) => {
+  if (!fileId) {
+    throw new Error("Missing customization reference");
+  }
+
+  const endpoint = new URL(CART_CONFIG_ENDPOINT, window.location.origin);
+  endpoint.searchParams.set("fileId", fileId);
+  if (variantId) {
+    endpoint.searchParams.set("variant", variantId);
+  }
+
+  try {
+    const response = await fetch(endpoint.toString());
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      const message =
+        payload?.error || payload?.message || "Unable to load customization";
+      throw new Error(message);
+    }
+
+    return {
+      config: payload?.config ?? {},
+      media: Array.isArray(payload?.media) ? payload.media : [],
+      design: payload?.fileData ?? null,
+    };
+  } catch (error) {
+    const message = error?.message || "Unable to load customization";
+    throw new Error(message);
   }
 };
 
@@ -216,4 +276,77 @@ async function openPixobeCustomization(e) {
     }
     resetButton();
   }
+}
+
+/**
+ *<a class="link" target="_blank" aria-describedby="a11y-new-window-message" data-key="45265482186938:09329ca102bab1166559d200bbfa0861" data-variant="45265482186938" "="" data-pixobeid="gid://shopify/GenericFile/30990261190842" onclick="viewCustomization(event)">
+                                                 View Customization
+                                              </a>
+ */ /**
+ *<a class="link" target="_blank" aria-describedby="a11y-new-window-message" data-key="45265482186938:09329ca102bab1166559d200bbfa0861" data-variant="45265482186938" "="" data-pixobeid="gid://shopify/GenericFile/30990261190842" onclick="viewCustomization(event)">
+                                                 View Customization
+                                              </a>
+ */
+async function viewCustomization(event) {
+  if (event?.preventDefault) {
+    event.preventDefault();
+  }
+
+  const initialTarget =
+    event?.currentTarget || event?.target || document?.activeElement;
+
+  const trigger = resolveCustomizationTrigger(initialTarget);
+  if (!trigger) {
+    return false;
+  }
+
+  const dataset = trigger.dataset || {};
+  const variantId = normalizeVariantIdValue(dataset.variant);
+  const pixobeId =
+    dataset.pixobeid ||
+    dataset.pixobeId ||
+    dataset.pixobeID ||
+    dataset.pixobe ||
+    dataset.fileid ||
+    dataset.fileId ||
+    dataset.file ||
+    null;
+
+  if (!pixobeId) {
+    return false;
+  }
+
+  const dialog = ensureDialog();
+  showDialog(dialog);
+
+  try {
+    const payload = await fetchCartCustomizationPayload({
+      fileId: pixobeId,
+      variantId,
+    });
+
+    const designerElement = document.createElement(PIXOBE_DESIGNER_TAG);
+    applyDesignPayload(dialog, designerElement, payload);
+
+    const onLoaded = () => {
+      dialog.querySelector("p-spinner")?.remove();
+    };
+
+    const handleClose = () => {
+      dialog.querySelector("p-spinner")?.remove();
+      closeDialog(dialog);
+    };
+
+    designerElement.addEventListener("loaded", onLoaded, { once: true });
+    designerElement.addEventListener("cancel", handleClose, { once: true });
+  } catch (error) {
+    dialog.querySelector("p-spinner")?.remove();
+    closeDialog(dialog);
+    if (window?.alert) {
+      const message = error?.message || "Unable to load customization.";
+      window.alert(message);
+    }
+  }
+
+  return false;
 }

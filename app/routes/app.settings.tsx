@@ -18,6 +18,7 @@ import {
   PIXOBE_PRODUCT_SETTINGS_METAOBJECT_HANDLE,
   PIXOBE_PRODUCT_SETTINGS_METAOBJECT_TYPE,
 } from "../constants/settings";
+import { getAppMetafield, setAppMetafield } from "app/utils/graphql/app-metadata";
 
 type FontEntry = {
   id: string;
@@ -67,7 +68,7 @@ const createGalleryEntry = (): GalleryEntry => ({
   images: [],
 });
 
-const SETTINGS_METAOBJECT_FETCH_SIZE = 1;
+const METADATA_FIELD_APP_SETTINGS = "metadata_app";
 
 type SettingsLoaderData = {
   savedSettings: SavedSettings | null;
@@ -114,205 +115,20 @@ const toGalleryEntries = (galleries?: GallerySummary[]): GalleryEntry[] => {
   }));
 };
 
-const parseSavedSettingsField = (value?: string | null): SavedSettings | null => {
-  if (!value) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(value);
-    return typeof parsed === "object" && parsed !== null
-      ? (parsed as SavedSettings)
-      : null;
-  } catch (error) {
-    console.warn("Unable to parse Pixobe app settings", error);
-    return null;
-  }
-};
-
-const buildSettingsMetaobjectFields = (settings: SavedSettings) => [
-  {
-    key: PIXOBE_PRODUCT_SETTINGS_FIELD_KEY,
-    value: JSON.stringify(settings),
-  },
-];
-
-const createSettingsMetaobject = async (
-  admin: any,
-  settings: SavedSettings,
-) => {
-  const response = await admin.graphql(
-    `#graphql
-      mutation CreatePixobeProductSettings($metaobject: MetaobjectCreateInput!) {
-        metaobjectCreate(metaobject: $metaobject) {
-          metaobject {
-            id
-          }
-          userErrors {
-            field
-            message
-          }
-        }
-      }
-    `,
-    {
-      variables: {
-        metaobject: {
-          type: PIXOBE_PRODUCT_SETTINGS_METAOBJECT_TYPE,
-          handle: PIXOBE_PRODUCT_SETTINGS_METAOBJECT_HANDLE,
-          fields: buildSettingsMetaobjectFields(settings),
-        },
-      },
-    },
-  );
-
-  const body = await response.json();
-  const errors = body.data?.metaobjectCreate?.userErrors ?? [];
-  if (errors.length > 0) {
-    throw new Error(errors.map((error: any) => error.message).join(", "));
-  }
-
-  const createdId = body.data?.metaobjectCreate?.metaobject?.id;
-  if (!createdId) {
-    throw new Error("Missing metaobject id in create response");
-  }
-
-  return createdId as string;
-};
-
-const updateSettingsMetaobject = async (
-  admin: any,
-  id: string,
-  settings: SavedSettings,
-) => {
-  const response = await admin.graphql(
-    `#graphql
-      mutation UpdatePixobeProductSettings(
-        $id: ID!
-        $metaobject: MetaobjectUpdateInput!
-      ) {
-        metaobjectUpdate(id: $id, metaobject: $metaobject) {
-          metaobject {
-            id
-          }
-          userErrors {
-            field
-            message
-          }
-        }
-      }
-    `,
-    {
-      variables: {
-        id,
-        metaobject: {
-          fields: buildSettingsMetaobjectFields(settings),
-        },
-      },
-    },
-  );
-
-  const body = await response.json();
-  const errors = body.data?.metaobjectUpdate?.userErrors ?? [];
-  if (errors.length > 0) {
-    throw new Error(errors.map((error: any) => error.message).join(", "));
-  }
-
-  const updatedId = body.data?.metaobjectUpdate?.metaobject?.id;
-  if (!updatedId) {
-    throw new Error("Missing metaobject id in update response");
-  }
-
-  return updatedId as string;
-};
-
-const parseRequestPayload = async (
-  request: Request,
-): Promise<{ settings: SavedSettings | null; metaobjectId: string | null }> => {
-  const contentType = request.headers.get("content-type") ?? "";
-
-  if (contentType.includes("application/json")) {
-    const body = await request.json();
-    const settings =
-      body?.settings && typeof body.settings === "object"
-        ? (body.settings as SavedSettings)
-        : null;
-    const metaobjectId =
-      typeof body?.metaobjectId === "string" && body.metaobjectId.trim() !== ""
-        ? body.metaobjectId
-        : null;
-    return { settings, metaobjectId };
-  }
-
-  const formData = await request.formData();
-  const rawSettings = formData.get("settings");
-  const metaobjectIdValue = formData.get("metaobjectId");
-  let parsedSettings: SavedSettings | null = null;
-
-  if (typeof rawSettings === "string") {
-    try {
-      const parsed = JSON.parse(rawSettings);
-      parsedSettings =
-        typeof parsed === "object" && parsed !== null
-          ? (parsed as SavedSettings)
-          : null;
-    } catch (error) {
-      console.warn("Unable to parse settings payload", error);
-    }
-  }
-
-  const metaobjectId =
-    typeof metaobjectIdValue === "string" && metaobjectIdValue.trim() !== ""
-      ? metaobjectIdValue
-      : null;
-
-  return { settings: parsedSettings, metaobjectId };
-};
 
 export const loader = async ({
   request,
-}: LoaderFunctionArgs): Promise<SettingsLoaderData> => {
+}: LoaderFunctionArgs): Promise<{ settings: Record<string, any> }> => {
   const { admin } = await authenticate.admin(request);
-  const response = await admin.graphql(
-    `#graphql
-      query PixobeProductSettings(
-        $type: String!
-        $first: Int!
-      ) {
-        metaobjects(first: $first, type: $type) {
-          nodes {
-            id
-            fields {
-              key
-              value
-            }
-          }
-        }
-      }
-    `,
-    {
-      variables: {
-        type: PIXOBE_PRODUCT_SETTINGS_METAOBJECT_TYPE,
-        first: SETTINGS_METAOBJECT_FETCH_SIZE,
-      },
-    },
-  );
-  const body = await response.json();
-  const nodes = body.data?.metaobjects?.nodes ?? [];
-  const metaobject = Array.isArray(nodes) ? nodes[0] ?? null : null;
-  const fields = Array.isArray(metaobject?.fields) ? metaobject?.fields : [];
-  const configField = fields.find(
-    (field: any) => field.key === PIXOBE_PRODUCT_SETTINGS_FIELD_KEY,
-  );
-
-  const savedSettings = parseSavedSettingsField(configField?.value ?? null);
-
-  return {
-    savedSettings,
-    metaobjectId:
-      typeof metaobject?.id === "string" ? metaobject.id : null,
-  };
+  let settings = await getAppMetafield(admin, METADATA_FIELD_APP_SETTINGS);
+  if (!settings) {
+    settings = {
+      fonts: [],
+    }
+  }
+  return { settings }
 };
+
 
 export const action = async ({
   request,
@@ -322,24 +138,16 @@ export const action = async ({
   }
 
   try {
-    const { admin } = await authenticate.admin(request);
-    const { settings, metaobjectId } = await parseRequestPayload(request);
-
-    if (!settings) {
+    const { admin, session } = await authenticate.admin(request);
+    const shop = session.shop;
+    if (!shop) {
       return data(
-        { error: "Missing settings payload" },
+        { error: "Missing shop details" },
         { status: 400 },
       );
     }
-
-    const newMetaobjectId = metaobjectId
-      ? await updateSettingsMetaobject(admin, metaobjectId, settings)
-      : await createSettingsMetaobject(admin, settings);
-
-    return data({
-      settings,
-      metaobjectId: newMetaobjectId,
-    });
+    const body = await request.json();
+    return setAppMetafield(admin, METADATA_FIELD_APP_SETTINGS, body);
   } catch (error: any) {
     console.error("Failed to persist Pixobe app settings", error);
     return data(
@@ -349,30 +157,29 @@ export const action = async ({
   }
 };
 
+
+
 export default function SettingsRoute() {
-  const loaderData = useLoaderData<typeof loader>();
-  const {
-    savedSettings: loaderSavedSettings,
-    metaobjectId: loaderMetaobjectId,
-  } = loaderData;
+  const { settings } = useLoaderData<typeof loader>();
+
   const settingsFetcher = useFetcher<SettingsActionResponse>();
   const [snapAngle, setSnapAngle] = useState(
-    () => loaderSavedSettings?.snapAngle ?? "45",
+    () => settings?.snapAngle ?? "45",
   );
   const [customizationPrice, setCustomizationPrice] = useState(
-    () => loaderSavedSettings?.customizationPrice ?? "0.00",
+    () => settings?.customizationPrice ?? "0.00",
   );
   const [supportInformation, setSupportInformation] = useState(
-    () => loaderSavedSettings?.supportInformation ?? "",
+    () => settings?.supportInformation ?? "",
   );
 
   const [fonts, setFonts] = useState<FontEntry[]>(() =>
-    toFontEntries(loaderSavedSettings?.fonts),
+    toFontEntries(settings?.fonts),
   );
   const mediaFetcher = useFetcher<{ media: GalleryMediaItem[] }>();
   const mediaModalRef = useRef<HTMLElementTagNameMap["s-modal"] | null>(null);
   const [galleries, setGalleries] = useState<GalleryEntry[]>(() =>
-    toGalleryEntries(loaderSavedSettings?.gallery),
+    toGalleryEntries(settings?.gallery),
   );
   const [activeGalleryId, setActiveGalleryId] = useState<string | null>(null);
   const [pendingMedia, setPendingMedia] = useState<Map<string, GalleryMediaItem>>(
@@ -381,15 +188,19 @@ export default function SettingsRoute() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const buildSanitizedSettings = (): SavedSettings => {
-    const sanitizedFonts: FontSummary[] = fonts.map((font) => ({
-      name: font.name.trim(),
-      url: font.url.trim(),
-    }));
+    const sanitizedFonts: FontSummary[] = fonts
+      .filter(f => f.name !== '')
+      .map((font) => ({
+        name: font.name.trim(),
+        url: font.url.trim(),
+      }));
 
-    const sanitizedGalleries: GallerySummary[] = galleries.map((gallery) => ({
-      name: gallery.name.trim(),
-      images: gallery.images.map((item) => ({ url: item.url })),
-    }));
+    const sanitizedGalleries: GallerySummary[] = galleries
+      .filter(gallery => gallery.name !== '')
+      .map((gallery) => ({
+        name: gallery.name.trim(),
+        images: gallery.images.map((item) => ({ url: item.url })),
+      }));
 
     return {
       snapAngle,
@@ -402,31 +213,14 @@ export default function SettingsRoute() {
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const sanitizedSettings = buildSanitizedSettings();
-    const formData = new FormData();
-    formData.append("settings", JSON.stringify(sanitizedSettings));
-    if (settingsMetaobjectId) {
-      formData.append("metaobjectId", settingsMetaobjectId);
-    }
-    settingsFetcher.submit(formData, {
+    const data = buildSanitizedSettings();
+    settingsFetcher.submit(data, {
       method: "post",
       action: "/app/settings",
+      encType: "application/json"
     });
   };
 
-  const [savedSettings, setSavedSettings] = useState<SavedSettings | null>(
-    loaderSavedSettings,
-  );
-  const [settingsMetaobjectId, setSettingsMetaobjectId] = useState<string | null>(
-    loaderMetaobjectId ?? null,
-  );
-  const [showSavedBanner, setShowSavedBanner] = useState(false);
-
-  useEffect(() => {
-    if (settingsFetcher.state === "submitting") {
-      setShowSavedBanner(false);
-    }
-  }, [settingsFetcher.state]);
 
   useEffect(() => {
     const response = settingsFetcher.data;
@@ -434,21 +228,14 @@ export default function SettingsRoute() {
     if (!nextSettings) {
       return;
     }
-
-    setSavedSettings(nextSettings);
-    if (response.metaobjectId) {
-      setSettingsMetaobjectId(response.metaobjectId);
-    }
     setSnapAngle(nextSettings.snapAngle);
     setCustomizationPrice(nextSettings.customizationPrice);
     setFonts(() => toFontEntries(nextSettings.fonts));
     setGalleries(() => toGalleryEntries(nextSettings.gallery));
     setSupportInformation(nextSettings.supportInformation ?? "");
-    setShowSavedBanner(true);
   }, [settingsFetcher.data]);
 
   const isSavingSettings = settingsFetcher.state === "submitting";
-  const settingsErrorMessage = settingsFetcher.data?.error ?? null;
 
   const handleFontFieldChange = (
     id: string,
@@ -474,22 +261,6 @@ export default function SettingsRoute() {
     () => new Set(pendingMedia.keys()),
     [pendingMedia],
   );
-
-  const extractBooleanValue = (event: any, fallback: boolean) => {
-    if (typeof event?.detail?.checked === "boolean") {
-      return event.detail.checked;
-    }
-    if (typeof event?.currentTarget?.checked === "boolean") {
-      return event.currentTarget.checked;
-    }
-    if (typeof event?.target?.checked === "boolean") {
-      return event.target.checked;
-    }
-    if (typeof event?.detail?.value === "boolean") {
-      return event.detail.value;
-    }
-    return !fallback;
-  };
 
   const handleGalleryFieldChange = (
     id: string,
@@ -814,20 +585,12 @@ export default function SettingsRoute() {
               )}
             </s-stack>
           </s-section>
-          {settingsErrorMessage ? (
-            <s-banner tone="critical">{settingsErrorMessage}</s-banner>
-          ) : null}
-          {showSavedBanner && savedSettings ? (
-            <s-banner tone="success">
-              Settings saved
-            </s-banner>
-          ) : null}
           <s-button
             type="submit"
             variant="primary"
             disabled={isSavingSettings}
           >
-            {isSavingSettings ? "Saving defaults…" : "Save defaults"}
+            {isSavingSettings ? <s-spinner></s-spinner> : "Save"}
           </s-button>
         </s-stack>
       </form>

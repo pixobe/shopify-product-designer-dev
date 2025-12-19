@@ -222,21 +222,34 @@
                                     </div>
                                   {%- endif -%}
                                   {%- comment -%}
-                                    Show "Customized" if the line item has the hidden property "_pixobid".
+                                    Show "Customized" if the line item has the hidden property "_pixobeid".
                                     (If your real key is different, update the key in the check below.)
                                   {%- endcomment -%}
-                                  {%- assign has_pixobid = false -%}
-                                  {%- if item.properties != blank -%}
-                                    {%- for property in item.properties -%}
-                                      {%- if property.first == '_pixobid' and property.last != blank -%}
-                                        {%- assign has_pixobid = true -%}
-                                        {%- break -%}
+                                   {%- if item.properties != blank -%}
+                                      {%- assign pixobeid_value = '' -%}
+                                      {%- for property in item.properties -%}
+                                        {%- if property.first == '_pixobeid' and property.last != blank -%}
+                                          {%- assign pixobeid_value = property.last -%}
+                                          {%- break -%}
+                                        {%- endif -%}
+                                      {%- endfor -%}
+                                      
+                                      {%- if pixobeid_value != '' -%}
+                                        <div class="text-xs text-opacity leading-tight">
+                                          <dd class="inline">
+                                            <a class="link" 
+                                                target="_blank" 
+                                                aria-describedby="a11y-new-window-message" 
+                                                data-key="{{ item.key }}" 
+                                                data-variant="{{ item.variant.id }}""
+                                                data-pixobeid="{{ pixobeid_value }}"
+                                                onclick="viewCustomization()">
+                                                 View Customization
+                                              </a>
+                                          </dd>
+                                        </div>
                                       {%- endif -%}
-                                    {%- endfor -%}
-                                  {%- endif -%}
-                                  {%- if has_pixobid -%}
-                                    <button type="button"  onclick="openPixobeCustomization(event);">View Customization</button>
-                                  {%- endif -%}
+                                    {%- endif -%}
                                 {%- endfor -%}
                               </dl>
         
