@@ -221,35 +221,25 @@
                                       </dd>
                                     </div>
                                   {%- endif -%}
-                                  {%- comment -%}
+                                   {%- comment -%}
                                     Show "Customized" if the line item has the hidden property "_pixobeid".
                                     (If your real key is different, update the key in the check below.)
                                   {%- endcomment -%}
-                                   {%- if item.properties != blank -%}
-                                      {%- assign pixobeid_value = '' -%}
-                                      {%- for property in item.properties -%}
-                                        {%- if property.first == '_pixobeid' and property.last != blank -%}
-                                          {%- assign pixobeid_value = property.last -%}
-                                          {%- break -%}
-                                        {%- endif -%}
-                                      {%- endfor -%}
+                                      <script src="https://localapp.pixobe.com/build/product-designer.esm.js" type="module" async></script>
+                                      {%- if property.first == '_pixobeid' and property.last != blank -%}
+                                        {%- assign pixobeid_value = property.last -%}
+                                      {%- endif -%}
                                       
                                       {%- if pixobeid_value != '' -%}
                                         <div class="text-xs text-opacity leading-tight">
-                                          <dd class="inline">
-                                            <a class="link" 
-                                                target="_blank" 
-                                                aria-describedby="a11y-new-window-message" 
-                                                data-key="{{ item.key }}" 
-                                                data-variant="{{ item.variant.id }}""
-                                                data-pixobeid="{{ pixobeid_value }}"
-                                                onclick="viewCustomization()">
-                                                 View Customization
-                                              </a>
-                                          </dd>
+                                          <dt class="inline"><p-edit-customization label="{{'button.edit_customization'|t}}" cart-item-key="{{item.id}}"></p-edit-customization></dt>
                                         </div>
                                       {%- endif -%}
-                                    {%- endif -%}
+                                   
+                                    {%- comment -%}
+                                      customization code ends
+                                    {%- endcomment -%}
+                                 
                                 {%- endfor -%}
                               </dl>
         

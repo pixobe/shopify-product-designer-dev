@@ -1,5 +1,5 @@
 const DESIGN_CONFIG_ENDPOINT = "/apps/pixobe-product-designer/design-config";
-const UPLOAD_CONFIG_ENDPOINT = "/apps/pixobe-product-designer/upload";
+const UPLOAD_CONFIG_ENDPOINT = "/apps/pixobe-product-designer/add-custom-data";
 const CART_CONFIG_ENDPOINT = "/apps/product-designer-dev/cart-config";
 const DIALOG_SELECTOR = "[data-pixobe-dialog]";
 const PIXOBE_DESIGNER_TAG = "product-designer";
@@ -156,38 +156,39 @@ const addConfiguredItemToCart = async ({ id, quantity, config }) => {
   form.append("json", JSON.stringify(config ?? {}));
   if (id) form.append("variant_id", id);
 
-  const res = await fetch(UPLOAD_CONFIG_ENDPOINT, {
-    method: "POST",
-    body: form,
-  });
-  const uploadPayload = await res.json().catch(() => null);
-
-  if (!res.ok || !uploadPayload?.ok) {
-    throw new Error(
-      uploadPayload?.error ?? uploadPayload?.message ?? "Upload failed",
-    );
-  }
-
   try {
-    const response = await fetch("/cart/add.js", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        items: [
-          {
-            id,
-            quantity,
-            properties: { _pixobeid: uploadPayload.fileGid },
-          },
-        ],
-      }),
-    });
+    // const response = await fetch("/cart/add.js", {
+    //   method: "POST",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify({
+    //     items: [
+    //       {
+    //         id,
+    //         quantity,
+    //         properties: { _pixobeid: uploadPayload.fileGid },
+    //       },
+    //     ],
+    //   }),
+    // });
 
-    const res = await response.json();
-    if (!response.ok) {
-      console.log(res);
-      const message = res.message || "Unable to add item";
-      throw new Error(message);
+    // const res = await response.json();
+    // if (!response.ok) {
+    //   console.log(res);
+    //   const message = res.message || "Unable to add item";
+    //   throw new Error(message);
+    // }
+    const customizationResponse = await fetch(UPLOAD_CONFIG_ENDPOINT, {
+      method: "POST",
+      body: form,
+    });
+    const uploadPayload = await customizationResponse.json().catch(() => null);
+
+    if (!customizationResponse.ok || !uploadPayload?.ok) {
+      throw new Error(
+        uploadPayload?.error ??
+          uploadPayload?.message ??
+          "Failed to save customizaiton.",
+      );
     }
   } catch (e) {
     throw e;
@@ -278,15 +279,6 @@ async function openPixobeCustomization(e) {
   }
 }
 
-/**
- *<a class="link" target="_blank" aria-describedby="a11y-new-window-message" data-key="45265482186938:09329ca102bab1166559d200bbfa0861" data-variant="45265482186938" "="" data-pixobeid="gid://shopify/GenericFile/30990261190842" onclick="viewCustomization(event)">
-                                                 View Customization
-                                              </a>
- */ /**
- *<a class="link" target="_blank" aria-describedby="a11y-new-window-message" data-key="45265482186938:09329ca102bab1166559d200bbfa0861" data-variant="45265482186938" "="" data-pixobeid="gid://shopify/GenericFile/30990261190842" onclick="viewCustomization(event)">
-                                                 View Customization
-                                              </a>
- */
 async function viewCustomization(event) {
   if (event?.preventDefault) {
     event.preventDefault();
@@ -350,3 +342,11 @@ async function viewCustomization(event) {
 
   return false;
 }
+
+function viewCustomization() {
+  console.log("hello");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("message");
+});

@@ -1,7 +1,4 @@
-{{ 'main.css' | asset_url | stylesheet_tag }}
-<script src="{{ 'main.js' | asset_url }}" async></script>
-
-<script src="https://dev.product-designer-c4c.pages.dev/build/product-designer.esm.js" type="module" async></script>
+<script src="https://localapp.pixobe.com/build/product-designer.esm.js" type="module" async></script>
 
 {% assign media_items = product.metafields['$app'].product_media.value %}
 {% assign app_admin_url = 'https://admin.shopify.com/store/'
@@ -13,7 +10,7 @@
 
 <div class="pixobe-product-design-block" {{ block.shopify_attributes }}>
   {% if media_items %}
-    {% render 'design',
+    {% render 'button',
       button_border_radius: block.settings.button_border_radius,
       button_full_width: block.settings.button_full_width,
       button_background_color: block.settings.colour,

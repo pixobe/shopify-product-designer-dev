@@ -13,12 +13,11 @@ import {
 } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
-import {
-  PIXOBE_PRODUCT_SETTINGS_FIELD_KEY,
-  PIXOBE_PRODUCT_SETTINGS_METAOBJECT_HANDLE,
-  PIXOBE_PRODUCT_SETTINGS_METAOBJECT_TYPE,
-} from "../constants/settings";
 import { getAppMetafield, setAppMetafield } from "app/utils/graphql/app-metadata";
+
+
+const METADATA_FIELD_APP_SETTINGS = "metadata_app";
+
 
 type FontEntry = {
   id: string;
@@ -68,7 +67,6 @@ const createGalleryEntry = (): GalleryEntry => ({
   images: [],
 });
 
-const METADATA_FIELD_APP_SETTINGS = "metadata_app";
 
 type SettingsLoaderData = {
   savedSettings: SavedSettings | null;

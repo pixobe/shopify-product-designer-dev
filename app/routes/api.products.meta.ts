@@ -49,9 +49,7 @@ const normalizeProductId = (value?: string | null) => {
   return trimmed;
 };
 
-const normalizeVariantIdValue = (
-  value?: string | number | null,
-) => {
+const normalizeVariantIdValue = (value?: string | number | null) => {
   let candidate: string | null = null;
 
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -92,7 +90,7 @@ const sanitizeMetaobjectId = (value?: string | null) => {
 const buildMetaobjectHandle = (media: MediaPayload) => {
   const baseId =
     typeof media.id === "string"
-      ? extractGidSegment(media.id) ?? "media"
+      ? (extractGidSegment(media.id) ?? "media")
       : "media";
   const variantSegment =
     typeof media.variantId === "string" && media.variantId
@@ -124,10 +122,6 @@ const sanitizeMediaPayload = (media: MediaPayload): MediaPayload => ({
 });
 
 const buildConfigFieldValue = (media: MediaPayload) => JSON.stringify(media);
-
-const buildMetaobjectFields = (media: MediaPayload) => [
-  { key: "config", value: buildConfigFieldValue(media) },
-];
 
 const createMetaobject = async (admin: any, media: MediaPayload) => {
   const response = await admin.graphql(
