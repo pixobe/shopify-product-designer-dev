@@ -1,10 +1,10 @@
 import { data, type ActionFunctionArgs } from "react-router";
 import { authenticate } from "../shopify.server";
+import { removeMediaFromProductVariant } from "app/utils/graphql/product-media";
 import {
   normalizeMetaobjectId,
   normalizeVariantId,
-  removeMediaFromProductVariant,
-} from "app/utils/graphql/product-media";
+} from "app/utils/common-utils";
 
 const parseRemovePayload = async (request: Request) => {
   const contentType = request.headers.get("content-type") ?? "";
