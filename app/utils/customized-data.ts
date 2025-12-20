@@ -8,14 +8,17 @@ export const getCustomizedData = async (
   variantId: string,
 ): Promise<any> => {
   try {
-    const variantDetails = await getProductVariantMedia(admin, variantId);
-    const config = await getAppMetafield(admin, METADATA_FIELD_APP_SETTINGS);
+    const [variantDetails, config, data] = await Promise.all([
+      getProductVariantMedia(admin, variantId),
+      getAppMetafield(admin, METADATA_FIELD_APP_SETTINGS),
+      getAppMetafield(admin, pixobeId),
+    ]);
+
     const meta = { name: variantDetails.name, id: variantDetails.id };
-    const data = await getAppMetafield(admin, pixobeId);
+
     return { media: variantDetails.media, config, meta, data };
   } catch (e: any) {
     console.error("Unable to fetch custom data", e.message);
     return {};
   }
-  return null;
 };

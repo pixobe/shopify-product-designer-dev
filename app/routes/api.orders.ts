@@ -2,10 +2,9 @@ import { data, type LoaderFunctionArgs } from "react-router";
 
 import { authenticate } from "../shopify.server";
 import { PIXOBE_CART_CONFIG_PROPERTY_KEY } from "../constants/customization";
-import {
-  loadPixobeDesignSettings,
-  loadPixobeProductMedia,
-} from "../utils/design-config";
+import { getAppMetafield } from "app/utils/graphql/app-metadata";
+import { getProductVariantMedia } from "app/utils/graphql/product-media";
+import { METADATA_FIELD_APP_SETTINGS } from "app/constants/settings";
 
 const ORDER_ID_PREFIX = "gid://shopify/Order/";
 
@@ -121,80 +120,29 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     (attr: any) => attr.key === PIXOBE_CART_CONFIG_PROPERTY_KEY,
   );
 
-  const fileId = attribute?.value?.trim() ?? "";
+  const pixobeId = attribute?.value?.trim() ?? "";
 
-  if (!fileId) {
+  if (!pixobeId) {
     return data({ message: `_pixobeid attribute empty on ${order.id}` }, 404);
   }
 
   const variant = lineItemWithAttribute.variant ?? null;
-  const productId = variant?.product?.id ?? null;
   const variantId = variant?.id ?? null;
 
-  const fileResponse = await admin.graphql(FILE_QUERY, {
-    variables: { id: fileId },
-  });
-  const fileResult = await fileResponse.json();
+  const [variantDetails, config, customizedData] = await Promise.all([
+    getProductVariantMedia(admin, variantId),
+    getAppMetafield(admin, METADATA_FIELD_APP_SETTINGS),
+    getAppMetafield(admin, pixobeId),
+  ]);
 
-  if (!fileResult) {
-    return data(
-      { message: "Shopify returned errors while fetching the file" },
-      502,
-    );
-  }
+  const meta = { name: variantDetails.name, id: variantDetails.id };
+  const media = variantDetails.media;
 
-  const genericFile = fileResult.data?.node;
-  if (!genericFile?.url) {
-    return jsonResponse(
-      { ok: false, error: "Linked GenericFile not found" },
-      404,
-    );
-  }
-
-  let fileText: string;
-  try {
-    const networkResponse = await fetch(genericFile.url);
-    if (!networkResponse.ok) {
-      return jsonResponse(
-        { ok: false, error: "Unable to download the customization file" },
-        502,
-      );
-    }
-
-    fileText = await networkResponse.text();
-  } catch (error: any) {
-    return jsonResponse(
-      {
-        ok: false,
-        error: "Failed to download the customization file",
-        details: error?.message,
-      },
-      502,
-    );
-  }
-
-  let fileData: unknown;
-  try {
-    fileData = JSON.parse(fileText);
-  } catch (error: any) {
-    return jsonResponse(
-      {
-        ok: false,
-        error: "Customization file is not valid JSON",
-        details: error?.message,
-      },
-      502,
-    );
-  }
-
-  const configPromise = loadPixobeDesignSettings(admin);
-  const mediaPromise = loadPixobeProductMedia(admin, productId, variantId);
-  const [config, media] = await Promise.all([configPromise, mediaPromise]);
-
-  return jsonResponse({
-    fileData,
-    config,
+  return data({
     media,
+    meta,
+    data: customizedData,
+    config,
   });
 };
 

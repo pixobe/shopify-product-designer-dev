@@ -171,8 +171,9 @@ export default function OrderCustomizationsPage() {
                 <p-viewer
                   ref={viewerRef}
                   background={displayBg}
+                  meta={customization.meta}
                   media={customization.media}
-                  data={customization.fileData}
+                  data={customization.data?.design}
                   config={customization.config}></p-viewer>
               </s-grid>
             </s-section>

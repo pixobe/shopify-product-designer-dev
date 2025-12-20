@@ -21,7 +21,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const url = new URL(request.url);
     const pixobeId = url.searchParams.get("pixobeId");
     const key = pixobeId ?? randomUUID();
-    console.log("Got pixobeId", pixobeId);
     const result = await setAppMetafield(admin, key, body);
     if (!result.success) {
       return data(

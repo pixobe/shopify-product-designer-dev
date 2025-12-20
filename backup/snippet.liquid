@@ -1,0 +1,30 @@
+{%- comment -%}
+  Show "Customized" if the line item has the hidden property "_pixobeid".
+  (If your real key is different, update the key in the check below.)
+{%- endcomment -%}
+
+{%- if property.first == '_pixobeid' and property.last != blank -%}
+  {%- assign pixobeid_value = property.last -%}
+{%- endif -%}
+
+{%- if pixobeid_value != '' -%}
+  <div class="text-xs text-opacity leading-tight">
+    <dt class="inline"></dt>
+    <dd>
+      <p-edit-customization
+        style="visibility: visible; display: block;"
+        product-id="{{ item.product_id }}"
+        variant-id="{{ item.variant_id }}"
+        pixobe-id="{{ pixobeid_value }}"
+        label="View Customization"
+        cart-item-id="{{item.id}}"
+        cart-item-key="{{item.key}}"
+      >
+      </p-edit-customization>
+    </dd>
+  </div>
+{%- endif -%}
+
+{%- comment -%}
+  customization code ends
+{%- endcomment -%}

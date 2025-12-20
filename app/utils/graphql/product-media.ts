@@ -4,54 +4,10 @@ import {
   PIXOBE_MEDIA_METAFIELD_NAMESPACE,
   PRODUCT_VARIANTS_PAGE_SIZE,
 } from "app/constants/customization";
+import { normalizeVariantId } from "../common-utils";
 
 const HANDLE_PREFIX = "pixobe-media";
 const PIXOBE_VARIANT_MEDIA_METAFIELD_KEY = "pixobe_media_items";
-const VARIANT_ID_PREFIX = "gid://shopify/ProductVariant/";
-const METAOBJECT_ID_PREFIX = "gid://shopify/Metaobject/";
-const NUMERIC_ID_REGEX = /^[0-9]+$/;
-
-export const normalizeVariantId = (value?: string | null) => {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-
-  if (trimmed.startsWith(VARIANT_ID_PREFIX)) {
-    return trimmed;
-  }
-
-  if (NUMERIC_ID_REGEX.test(trimmed)) {
-    return `${VARIANT_ID_PREFIX}${trimmed}`;
-  }
-
-  return trimmed;
-};
-
-export const normalizeMetaobjectId = (value?: string | null) => {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-
-  if (trimmed.startsWith(METAOBJECT_ID_PREFIX)) {
-    return trimmed;
-  }
-
-  if (NUMERIC_ID_REGEX.test(trimmed)) {
-    return `${METAOBJECT_ID_PREFIX}${trimmed}`;
-  }
-
-  return trimmed;
-};
 
 type VariantContext = {
   productId: string;
@@ -339,7 +295,7 @@ export async function getProductVariantMedia(
   admin: any,
   variant: string,
 ): Promise<any> {
-  const variantId = `${VARIANT_ID_PREFIX}${variant}`;
+  const variantId = normalizeVariantId(variant);
   const variables = {
     variantId,
     namespace: PIXOBE_MEDIA_METAFIELD_NAMESPACE,

@@ -3,8 +3,8 @@ import { authenticate } from "../shopify.server";
 import {
   getProductMedia,
   getVariantContext,
-  normalizeVariantId,
 } from "app/utils/graphql/product-media";
+import { normalizeVariantId } from "app/utils/common-utils";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.public.appProxy(request);
@@ -33,10 +33,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       return data({ error: "Variant not found" }, { status: 404 });
     }
 
-    const productMedia = await getProductMedia(
-      admin,
-      variantContext.productId,
-    );
+    const productMedia = await getProductMedia(admin, variantContext.productId);
     const matchedVariant = productMedia?.variants?.find(
       (variant: any) => variant.id === variantId,
     );
