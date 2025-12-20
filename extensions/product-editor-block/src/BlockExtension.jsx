@@ -14,7 +14,7 @@ function Extension() {
   const productId = selectedProduct?.[0]?.id;
 
   // Construct full admin URL dynamically
-  const appUrl = `/app/customize?id=${encodeURIComponent(productId)}`;
+  const appUrl = `/app/configure-product-media?id=${encodeURIComponent(productId)}`;
 
   return (
     <s-admin-block heading="Product Editor">

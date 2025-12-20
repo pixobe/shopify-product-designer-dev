@@ -6,7 +6,10 @@ import {
 } from "react-router";
 import { randomUUID } from "node:crypto";
 import { authenticate } from "../shopify.server";
-import { setAppMetafield } from "app/utils/graphql/app-metadata";
+import {
+  setAppMetafield,
+  updateAppMetaField as updateAppMetafield,
+} from "app/utils/graphql/app-metadata";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin } = await authenticate.public.appProxy(request);
@@ -15,7 +18,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
   try {
     const body = await request.json();
-    const key = randomUUID();
+    const url = new URL(request.url);
+    const pixobeId = url.searchParams.get("pixobeId");
+    const key = pixobeId ?? randomUUID();
+    console.log("Got pixobeId", pixobeId);
     const result = await setAppMetafield(admin, key, body);
     if (!result.success) {
       return data(

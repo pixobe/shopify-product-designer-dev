@@ -1,6 +1,15 @@
 <script src="https://localapp.pixobe.com/build/product-designer.esm.js" type="module" async></script>
 
-{% assign media_items = product.metafields['$app'].product_media.value %}
+{%- assign variants = product.variants -%}
+{%- for v in variants -%}
+  {%- assign media_items = v.metafields['$app'].pixobe_media_items.value -%}
+  {%- assign has_media = false -%}
+  {%- if media_items != blank and media_items.size > 0 -%}
+    {%- assign has_media = true -%}
+    {%- break -%}
+  {%- endif -%}
+{%- endfor -%}
+
 {% assign app_admin_url = 'https://admin.shopify.com/store/'
   | append: shop.permanent_domain
   | remove: '.myshopify.com'
@@ -9,7 +18,7 @@
 %}
 
 <div class="pixobe-product-design-block" {{ block.shopify_attributes }}>
-  {% if media_items %}
+  {% if has_media %}
     {% render 'button',
       button_border_radius: block.settings.button_border_radius,
       button_full_width: block.settings.button_full_width,

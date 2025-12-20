@@ -78,8 +78,98 @@ export async function setAppMetafield(
   }
 }
 
+// Helper function to update existing app metafield data
+export async function updateAppMetaField(
+  admin: any,
+  metafieldKey: string,
+  metafieldData: any,
+) {
+  console.log("Updating meta field:::::::", JSON.stringify(metafieldData));
+  try {
+    const appMetafieldQuery = `
+      query {
+        currentAppInstallation {
+          id
+          metafield(namespace: "app_config", key: "${metafieldKey}") {
+            id
+          }
+        }
+      }
+    `;
+
+    const appMetafieldResponse = await admin.graphql(appMetafieldQuery);
+    const appMetafieldData = await appMetafieldResponse.json();
+
+    const ownerId = appMetafieldData.data?.currentAppInstallation?.id;
+    if (!ownerId) {
+      return {
+        success: false,
+        message: "Failed to retrieve app installation ID",
+      };
+    }
+
+    const metafieldId =
+      appMetafieldData.data?.currentAppInstallation?.metafield?.id;
+    if (!metafieldId) {
+      return {
+        success: false,
+        message: `Metafield with key "${metafieldKey}" not found`,
+      };
+    }
+
+    const metafieldMutation = `
+      mutation UpdateAppDataMetafield($metafieldsSetInput: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafieldsSetInput) {
+          metafields {
+            id
+            namespace
+            key
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      metafieldsSetInput: [
+        {
+          id: metafieldId,
+          type: "json",
+          value: JSON.stringify(metafieldData),
+          ownerId: ownerId,
+        },
+      ],
+    };
+
+    const metafieldResponse = await admin.graphql(metafieldMutation, {
+      variables,
+    });
+    const metafieldResult = await metafieldResponse.json();
+
+    if (metafieldResult.data?.metafieldsSet?.userErrors?.length > 0) {
+      return {
+        success: false,
+        message: metafieldResult.data.metafieldsSet.userErrors[0].message,
+      };
+    }
+
+    return {
+      success: true,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message || "An unexpected error occurred",
+    };
+  }
+}
+
 // Helper function to get app metafield data
 export async function getAppMetafield(admin: any, meta_key: string) {
+  console.log("Checking metaid:::::", meta_key);
   try {
     // Get current app installation with metafield
     const query = `
@@ -95,7 +185,6 @@ export async function getAppMetafield(admin: any, meta_key: string) {
 
     const response = await admin.graphql(query);
     const data = await response.json();
-
     if (!data.data?.currentAppInstallation?.metafield?.value) {
       return null;
     }

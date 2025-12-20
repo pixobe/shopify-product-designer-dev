@@ -14,9 +14,7 @@ import {
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { getAppMetafield, setAppMetafield } from "app/utils/graphql/app-metadata";
-
-
-const METADATA_FIELD_APP_SETTINGS = "metadata_app";
+import { METADATA_FIELD_APP_SETTINGS } from "app/constants/settings";
 
 
 type FontEntry = {
@@ -67,11 +65,6 @@ const createGalleryEntry = (): GalleryEntry => ({
   images: [],
 });
 
-
-type SettingsLoaderData = {
-  savedSettings: SavedSettings | null;
-  metaobjectId: string | null;
-};
 
 type SettingsActionResponse = {
   settings?: SavedSettings;

@@ -35,11 +35,12 @@ prefix = "apps"
 
 [pos]
 embedded = false
+[build]
+automatically_update_urls_on_dev = true
 
 
 [metafields]
 api_version = "2026-01"
-
 
 [metaobjects.app.product_media_item]
 name = "Pixobe Media Settings"
@@ -55,15 +56,10 @@ name = "Product Media config json"
 type = "json"
 description = "Arbitrary Pixobe configuration copied verbatim into the object's `config`."
 
-
-[product.metafields.app.product_media]
+[variant.metafields.app.pixobe_media_items]
 type = "list.metaobject_reference<$app:product_media_item>"
 name = "Pixobe Media Config"
 description = "Ordered list of Pixobe media entries attached to the product."
 
-[product.metafields.app.product_media.access]
-storefront = "public_read"
-admin = "merchant_read_write"
-
-[build]
-automatically_update_urls_on_dev = true
+access.storefront = "public_read"
+access.admin = "merchant_read_write"
