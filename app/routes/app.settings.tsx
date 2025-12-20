@@ -33,7 +33,7 @@ type SavedSettings = {
   customizationPrice: string;
   fonts: FontSummary[];
   gallery: GallerySummary[];
-  supportInformation?: string;
+  supportContent?: string;
 };
 
 const createFontEntry = (): FontEntry => ({
@@ -160,8 +160,8 @@ export default function SettingsRoute() {
   const [customizationPrice, setCustomizationPrice] = useState(
     () => settings?.customizationPrice ?? "0.00",
   );
-  const [supportInformation, setSupportInformation] = useState(
-    () => settings?.supportInformation ?? "",
+  const [supportContent, setSupportContent] = useState(
+    () => settings?.supportContent ?? "",
   );
 
   const [fonts, setFonts] = useState<FontEntry[]>(() =>
@@ -198,7 +198,7 @@ export default function SettingsRoute() {
       customizationPrice,
       fonts: sanitizedFonts,
       gallery: sanitizedGalleries,
-      supportInformation: supportInformation.trim(),
+      supportContent: supportContent.trim(),
     };
   };
 
@@ -223,7 +223,7 @@ export default function SettingsRoute() {
     setCustomizationPrice(nextSettings.customizationPrice);
     setFonts(() => toFontEntries(nextSettings.fonts));
     setGalleries(() => toGalleryEntries(nextSettings.gallery));
-    setSupportInformation(nextSettings.supportInformation ?? "");
+    setSupportContent(nextSettings.supportContent ?? "");
   }, [settingsFetcher.data]);
 
   const isSavingSettings = settingsFetcher.state === "submitting";
@@ -364,8 +364,8 @@ export default function SettingsRoute() {
               placeholder="Paste HTML content or text to be displayed to User for contact support"
               name="supportInformation"
               rows={3}
-              value={supportInformation}
-              onInput={(event: any) => setSupportInformation(event.currentTarget.value)}
+              value={supportContent}
+              onInput={(event: any) => setSupportContent(event.currentTarget.value)}
             />
           </s-section>
           <s-section>

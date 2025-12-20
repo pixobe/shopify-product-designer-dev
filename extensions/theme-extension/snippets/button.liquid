@@ -1,3 +1,16 @@
+{% doc %}
+  Renders the product customize button with theme-controlled CSS variables.
+
+  @param {string} button_background_color - CSS color for button background
+  @param {string} button_text_color - CSS color for button text
+  @param {string} button_hover_color - CSS color for button background on hover
+  @param {string} button_text_hover_color - CSS color for button text on hover
+  @param {number} button_border_radius - Border radius in pixels
+  @param {number} button_border_width - Border width in pixels
+  @param {string} button_border_color - CSS color for button border
+  @param {boolean} button_full_width - Whether the button should be full width
+{% enddoc %}
+
 <div>
   {% assign config = app.metafields.app_config.metadata_app.value %}
   {% assign current_variant = product.selected_or_first_available_variant %}
@@ -7,6 +20,15 @@
       product-id="{{ product.id}}"
       variant-id="{{ current_variant.id }}"
       label="{{'button.customize' | t}}"
+      style="
+        --p-btn-background: {{ button_background_color }};
+        --p-btn-text: {{ button_text_color }};
+        --p-btn-hover-background: {{ button_hover_color }};
+        --p-btn-hover-text: {{ button_text_hover_color }};
+        --p-btn-radius: {{ button_border_radius }}px;
+        --p-btn-border: {{ button_border_width }}px solid {{ button_border_color }};
+        --p-btn-width: {% if button_full_width %}100%{% else %}auto{% endif %};
+      "
     >
       ></p-customize-button
     >

@@ -66,9 +66,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   if (productId) {
     const { admin } = await authenticate.admin(request);
     const productMediaList = await getProductMedia(admin, productId);
-
-    console.log("variants:::", productMediaList.variants)
-
     return data({
       productId,
       productName: productMediaList?.productName ?? "",
