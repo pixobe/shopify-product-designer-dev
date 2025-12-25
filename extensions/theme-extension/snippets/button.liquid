@@ -1,25 +1,14 @@
-{% doc %}
-  Renders the product customize button with theme-controlled CSS variables.
-
-  @param {string} button_background_color - CSS color for button background
-  @param {string} button_text_color - CSS color for button text
-  @param {string} button_hover_color - CSS color for button background on hover
-  @param {string} button_text_hover_color - CSS color for button text on hover
-  @param {number} button_border_radius - Border radius in pixels
-  @param {number} button_border_width - Border width in pixels
-  @param {string} button_border_color - CSS color for button border
-  @param {boolean} button_full_width - Whether the button should be full width
-{% enddoc %}
-
 <div>
   {% assign config = app.metafields.app_config.metadata_app.value %}
   {% assign current_variant = product.selected_or_first_available_variant %}
+  {%- assign locale = localization.language.iso_code -%}
 
   {% if product.id %}
     <p-customize-button
       product-id="{{ product.id}}"
       variant-id="{{ current_variant.id }}"
       label="{{'button.customize' | t}}"
+      locale="{{locale}}"
       style="
         --p-btn-background: {{ button_background_color }};
         --p-btn-text: {{ button_text_color }};
@@ -36,45 +25,5 @@
 </div>
 
 <script>
-
   window.pixobeProductConfig= {{config |json}};
-  // Expose localized labels from the theme locale under `window.pixobeLabels`.
-  // Each value is JSON-encoded to ensure safe JS string escaping.
-  window.pixobeTranslations = {
-    addToCart: {{ 'app.addToCart' | t | json }},
-    closeButton: {{ 'app.closeButton' | t | json }},
-    saveButton: {{ 'app.saveButton' | t | json }},
-    objectOutsideCanvas: {{ 'app.objectOutsideCanvas' | t | json }},
-    productInfoHeader: {{ 'app.productInfoHeader' | t | json }},
-    images: {{ 'app.images' | t | json }},
-    gallery: {{ 'app.gallery' | t | json }},
-    text: {{ 'app.text' | t | json }},
-    graphics: {{ 'app.graphics' | t | json }},
-    create: {{ 'app.create' | t | json }},
-    textEditor: {{ 'app.textEditor' | t | json }},
-    imageEditor: {{ 'app.imageEditor' | t | json }},
-    addNew: {{ 'app.addNew' | t | json }},
-    allowedImageTypesText: {{ 'app.allowedImageTypesText' | t | json }},
-    flipText: {{ 'app.flipText' | t | json }},
-    rotateText: {{ 'app.rotateText' | t | json }},
-    editImage: {{ 'app.editImage' | t | json }},
-    editText: {{ 'app.editText' | t | json }},
-    fontText: {{ 'app.fontText' | t | json }},
-    fontColor: {{ 'app.fontColor' | t | json }},
-    generatorTextPlaceholder: {{ 'app.generatorTextPlaceholder' | t | json }},
-    generatorError: {{ 'app.generatorError' | t | json }},
-    generatingImagesHeader: {{ 'app.generatingImagesHeader' | t | json }},
-    generatingImagesMessage: {{ 'app.generatingImagesMessage' | t | json }},
-    generateImageLabel: {{ 'app.generateImageLabel' | t | json }},
-    promptRequiredError: {{ 'app.promptRequiredError' | t | json }},
-    timedoutError: {{ 'app.timedoutError' | t | json }},
-    describeImageLabel: {{ 'app.describeImageLabel' | t | json }},
-    helpRequiredButtonLabel: {{ 'app.helpRequiredButtonLabel' | t | json }},
-    helpRequiredHeading: {{ 'app.helpRequiredHeading' | t | json }},
-    helpRequiredIconLabel: {{ 'app.helpRequiredIconLabel' | t | json }},
-    socialMediaLabel: {{ 'app.socialMediaLabel' | t | json }},
-    downloadingHeader: {{ 'app.downloadingHeader' | t | json }},
-    downloadingMessage: {{ 'app.downloadingMessage' | t | json }},
-    nodatafound: {{ 'app.nodatafound' | t | json }}
-  };
 </script>
