@@ -443,7 +443,6 @@ const updateMetaobject = async (
       variables: {
         id,
         metaobject: {
-          handle: buildMetaobjectHandle(media),
           fields: [{ key: "config", value: JSON.stringify(media) }],
         },
       },

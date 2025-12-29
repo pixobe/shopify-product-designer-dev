@@ -1,6 +1,6 @@
 {
   "button": {
-    "customize": "Customize"
+    "customize": "Personalizar"
   },
   "pixobe": {
     "empty_state": {
@@ -8,42 +8,5 @@
       "body": "Add media to this product in Pixobe Product Designer app to enable the designer button.",
       "enable_customization": "Enable customization"
     }
-  },
-  "app": {
-    "addToCart": "Carrinho",
-    "closeButton": "Fechar",
-    "saveButton": "Salvar",
-    "objectOutsideCanvas": "O objeto está fora da área personalizável",
-    "productInfoHeader": "Informações do Produto",
-    "images": "Imagens",
-    "gallery": "Galeria",
-    "text": "Texto",
-    "graphics": "Gráficos",
-    "create": "Criar",
-    "textEditor": "Editor de Texto",
-    "imageEditor": "Editor de Imagem",
-    "addNew": "Adicionar Novo",
-    "allowedImageTypesText": "Envie uma imagem transparente nos formatos .PNG, .TIFF ou .SVG, totalmente em preto, para obter a melhor qualidade de impressão a laser",
-    "flipText": "Inverter",
-    "rotateText": "Girar",
-    "editImage": "Editar Imagem",
-    "editText": "Editar Texto",
-    "fontText": "Fonte",
-    "fontColor": "Cor",
-    "generatorTextPlaceholder": "Descreva em poucas palavras o que você deseja criar",
-    "generatorError": "Não foi possível gerar as imagens no momento. Entre em contato com o suporte ao cliente para obter ajuda.",
-    "generatingImagesHeader": "Gerando Imagens",
-    "generatingImagesMessage": "Aguarde, isso pode levar alguns segundos.",
-    "generateImageLabel": "Criar imagem com IA",
-    "promptRequiredError": "Descreva o que você gostaria de gerar no campo acima.",
-    "timedoutError": "A solicitação expirou durante a geração da imagem. Tente novamente mais tarde.",
-    "describeImageLabel": "Descrição da imagem",
-    "helpRequiredButtonLabel": "Solicitar Ajuda",
-    "helpRequiredHeading": "Entrar em Contato com o Suporte",
-    "helpRequiredIconLabel": "Ajuda Necessária",
-    "socialMediaLabel": "Redes Sociais",
-    "downloadingHeader": "Baixando",
-    "downloadingMessage": "Aguarde, isso pode levar algum tempo...",
-    "nodatafound": "Nenhum dado encontrado."
   }
 }

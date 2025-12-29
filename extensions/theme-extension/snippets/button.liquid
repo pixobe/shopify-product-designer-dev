@@ -4,7 +4,7 @@
   {%- assign locale = localization.language.iso_code -%}
 
   {% if product.id %}
-    <p-customize-button
+    <p-spcustomize-button
       product-id="{{ product.id}}"
       variant-id="{{ current_variant.id }}"
       label="{{'button.customize' | t}}"
@@ -19,7 +19,7 @@
         --p-btn-width: {% if button_full_width %}100%{% else %}auto{% endif %};
       "
     >
-      ></p-customize-button
+      ></p-spcustomize-button
     >
   {% endif %}
 </div>

@@ -30,9 +30,7 @@ export default function OrderCustomizationsPage() {
   const [error, setError] = useState<string | null>(null);
 
 
-  const [displayBg, setDisplayBg] = useState(true);
   const [initialized, setInitialized] = useState(false);
-
   const viewerRef = useRef<any>(null);
 
   useEffect(() => {
@@ -44,7 +42,8 @@ export default function OrderCustomizationsPage() {
 
       viewer.addEventListener('download', handleDownload);
 
-      viewer.addEventListener('initialized', (e: any) => {
+      viewer.addEventListener('loaded', (e: any) => {
+        console.log("Loaded")
         setInitialized(e.detail);
       });
 
@@ -144,8 +143,7 @@ export default function OrderCustomizationsPage() {
         </form>
       </s-section>
 
-      <s-section heading="Customization">
-
+      <s-section>
         <s-grid alignItems="center">
           {status === "loading" && <s-spinner accessibilityLabel="Loading" size="large-100" />}
 
@@ -155,26 +153,17 @@ export default function OrderCustomizationsPage() {
           {status === "success" && customization && (
             <s-section>
               <s-grid>
-                <s-switch
-                  label="Show Product Media"
-                  details="Hide or display the product media in the downloaded customization file."
-                  checked={displayBg}
-                  defaultChecked={true}
-                  // For web components, `onChange` is usually safer than `onInput`
-                  onInput={(event: any) => {
-                    // Polaris web components typically expose `checked` on the target
-                    const target = event.currentTarget as HTMLInputElement;
-                    setDisplayBg(target.checked);
-                  }}
-                />
-                {initialized === false && <s-spinner accessibilityLabel="Loading" size="large-100" />}
-                <p-viewer
+                {initialized === false &&
+                  <s-box padding="base">
+                    <s-spinner accessibilityLabel="Loading" size="large-100" />
+                  </s-box>
+                }
+                <p-viewdesign
                   ref={viewerRef}
-                  background={displayBg}
                   meta={customization.meta}
                   media={customization.media}
                   data={customization.data?.design}
-                  config={customization.config}></p-viewer>
+                  config={customization.config}></p-viewdesign>
               </s-grid>
             </s-section>
           )}
