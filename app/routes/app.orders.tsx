@@ -36,20 +36,9 @@ export default function OrderCustomizationsPage() {
   useEffect(() => {
     const viewer = viewerRef.current;
     if (viewer) {
-      const handleDownload = (e: CustomEvent) => {
-        FileSaver.saveAs(e.detail, `${query}.svg`);
-      };
-
-      viewer.addEventListener('download', handleDownload);
-
       viewer.addEventListener('loaded', (e: any) => {
-        console.log("Loaded")
         setInitialized(e.detail);
       });
-
-      return () => {
-        viewer.removeEventListener('download', handleDownload);
-      };
     }
   }, [customization]);
 

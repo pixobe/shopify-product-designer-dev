@@ -583,7 +583,7 @@ export default function CustomizePage() {
             padding="none"
           >
             <s-grid blockSize="380px" background="strong" padding="none" alignItems="center">
-              <p-grid ref={gridEditorRef} key={previewMedia.id} config={previewMedia}></p-grid>
+              <p-product-grid ref={gridEditorRef} key={previewMedia.id} config={previewMedia}></p-product-grid>
             </s-grid>
             <s-grid background="strong" padding="base" alignContent="start" gap="base">
               <s-switch
