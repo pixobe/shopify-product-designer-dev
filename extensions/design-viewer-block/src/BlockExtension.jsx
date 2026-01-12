@@ -79,7 +79,7 @@ function Extension() {
   }, [orderId, query]);
 
   return (
-    <s-admin-block heading="Pixobe">
+    <s-admin-block heading="Pixobe Order Customization">
       <s-stack direction="block">
         {isCustomized === null ? (
           <s-text color="subdued">{i18n.translate("loading")}</s-text>

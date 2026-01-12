@@ -24,6 +24,7 @@ declare module "react" {
       // 2. Assign the custom interface to the tag
       "p-viewdesign": ViewDesignProps & React.HTMLAttributes<HTMLElement>;
       "p-product-grid": any;
+      "s-app-nav": any;
     }
   }
 }

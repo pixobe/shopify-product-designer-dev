@@ -14,13 +14,15 @@ function Extension() {
   const productId = selectedProduct?.[0]?.id;
 
   // Construct full admin URL dynamically
-  const appUrl = `/app/configure-product-media?id=${encodeURIComponent(productId)}`;
+  const appUrl = `/app/customize?id=${encodeURIComponent(productId)}`;
 
   return (
-    <s-admin-block heading="Product Editor">
+    <s-admin-block heading="Pixobe Product Configuration">
       <s-stack direction="block">
-        {i18n.translate("welcome")}
-        <s-link href={appUrl}>{i18n.translate("click")}</s-link>{" "}
+        <s-box>
+          <s-link href={appUrl}>{i18n.translate("click")}</s-link>{" "}
+          {i18n.translate("welcome")}
+        </s-box>
       </s-stack>
     </s-admin-block>
   );

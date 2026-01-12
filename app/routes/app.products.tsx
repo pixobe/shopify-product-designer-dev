@@ -9,24 +9,28 @@ import {
   useRouteError,
 } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
+import { authenticate } from "../shopify.server";
+import { getOneProduct } from "app/utils/graphql/product-sample";
 
 type Product = {
   id: string;
   title: string;
-  handle: string;
-  status: string;
+  image?: { url: string; altText?: string | null } | null;
 };
 
-const formatStatus = (status: string) =>
-  status
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .replace(/(^|\s)\w/g, (letter) => letter.toUpperCase());
-
 type ProductsPayload = { products: Product[] };
+type LoaderData = { products: Product[]; adminProductHref: string };
 
-export const loader = async (_args: LoaderFunctionArgs) => {
-  const payload = { products: [] };
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { session, admin } = await authenticate.admin(request);
+  const shopDomain = session.shop?.replace(".myshopify.com", "") ?? null;
+  const productId = await getOneProduct(admin);
+
+  const adminProductHref = shopDomain
+    ? `https://admin.shopify.com/store/${shopDomain}/products/${productId}`
+    : `https://admin.shopify.com/store/${shopDomain}/products`;
+
+  const payload: LoaderData = { products: [], adminProductHref };
   return data(payload);
 };
 
@@ -37,6 +41,7 @@ export default function ProductsPage() {
   const location = useLocation();
   const [query, setQuery] = useState("");
   const autoLoadedProductRef = useRef<string | null>(null);
+
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -56,7 +61,7 @@ export default function ProductsPage() {
     searchParams.set("query", productParam);
     fetcher.load(`/api/products?${searchParams.toString()}`);
     autoLoadedProductRef.current = productParam;
-  }, [location.search, fetcher]);
+  }, [location.search]);
 
   const products = useMemo(
     () => fetcher.data?.products ?? loaderData.products ?? [],
@@ -89,7 +94,35 @@ export default function ProductsPage() {
   };
 
   return (
-    <s-page heading="Products">
+    <s-page heading="Products" inlineSize="base">
+      <s-section slot="aside" heading="💡 Pro Tip">
+        <s-stack gap="base">
+          <s-stack gap="small">
+            <s-paragraph>
+              Add <strong>Product Details Block</strong> on the product page for quicker access to Product Configuration screen.
+            </s-paragraph>
+            <s-paragraph color="subdued">
+              Scroll down to bottom to find Block section.
+            </s-paragraph>
+          </s-stack>
+          <s-box borderRadius="base" overflow="hidden" blockSize="100%">
+            <s-link href={'/product-details-block.webp'} target="_blank">
+              <s-image
+                src="/product-details-block.webp"
+                alt="Customize checkout illustration"
+                inlineSize="auto"
+                aspectRatio="1/1"
+                objectFit="cover"
+              />
+            </s-link>
+          </s-box>
+          <s-button href={loaderData.adminProductHref}>
+            <s-grid gridTemplateColumns="24px 1fr"><s-icon type="apps"></s-icon>Product Block</s-grid>
+          </s-button>
+        </s-stack>
+      </s-section>
+
+
       <s-section>
         <form onSubmit={handleSearch}>
           <s-stack direction="inline" gap="base">
@@ -109,6 +142,7 @@ export default function ProductsPage() {
             />
           </s-stack>
         </form>
+
       </s-section>
 
       <s-section heading="Results">
@@ -121,10 +155,8 @@ export default function ProductsPage() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
+                  <th style={cellHeader}>Image</th>
                   <th style={cellHeader}>Title</th>
-                  <th style={cellHeader}>Status</th>
-                  <th style={cellHeader}>Handle</th>
-                  <th style={cellHeader}>ID</th>
                 </tr>
               </thead>
               <tbody>
@@ -137,10 +169,19 @@ export default function ProductsPage() {
                     tabIndex={0}
                     style={{ cursor: "pointer" }}
                   >
+                    <td style={{ ...cellBody, width: "72px" }}>
+                      {product.image?.url ? (
+                        <img
+                          src={product.image.url}
+                          alt={product.image.altText || product.title}
+                          style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 6 }}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <s-text color="subdued">No image</s-text>
+                      )}
+                    </td>
                     <td style={cellBody}>{product.title}</td>
-                    <td style={cellBody}>{formatStatus(product.status)}</td>
-                    <td style={cellBody}>{product.handle}</td>
-                    <td style={cellBody}>{product.id}</td>
                   </tr>
                 ))}
               </tbody>
