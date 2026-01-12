@@ -1,8 +1,23 @@
 {%- assign locale = localization.language.iso_code -%}
 
+<style>
+  .view-customization-button {
+    display: block;
+    width: fit-content;
+    font-size: 12px;
+    border: none;
+    outline: none;
+    background: none;
+    margin: 0px;
+    padding: 0px;
+    cursor: pointer;
+    color: var(--button-color, oklch(62.3% 0.214 259.815));
+  }
+</style>
+
 <div class="pixobe-viewcustomization-{{ block.id }}">
   <p-shopify-editcustomization
-    label="View Customization"
+    label="{{'view_personalization' | t}}"
     locale="{{ locale }}"
   >
   </p-shopify-editcustomization>
