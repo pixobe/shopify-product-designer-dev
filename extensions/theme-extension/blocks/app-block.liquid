@@ -11,14 +11,14 @@
 {%- assign variants = product.variants -%}
 {%- for v in variants -%}
   {%- assign media_items = v.metafields['$app'].pixobe_media_items.value -%}
-  {%- assign has_media = false -%}
+  {%- assign is_configured = false -%}
   {%- if media_items != blank and media_items.size > 0 -%}
-    {%- assign has_media = true -%}
+    {%- assign is_configured = true -%}
     {%- break -%}
   {%- endif -%}
 {%- endfor -%}
 
-{% assign app_admin_url = 'https://admin.shopify.com/store/'
+{% assign config_url = 'https://admin.shopify.com/store/'
   | append: shop.permanent_domain
   | remove: '.myshopify.com'
   | append: '/apps/pixobe-product-designer/app/configure-product-media?id=gid%3A%2F%2Fshopify%2FProduct%2F'
@@ -26,35 +26,20 @@
 %}
 
 <div class="pixobe-product-design-block" {{ block.shopify_attributes }}>
-  {% if has_media %}
-    {% render 'customize-button',
-      button_border_radius: block.settings.button_border_radius,
-      button_full_width: block.settings.button_full_width,
-      button_background_color: block.settings.button_background_color,
-      button_text_color: block.settings.button_text_color,
-      button_hover_color: block.settings.button_hover_color,
-      button_text_hover_color: block.settings.button_text_hover_color,
-      button_border_width: block.settings.button_border_width,
-      button_border_color: block.settings.button_border_color
-    %}
-  {% else %}
-    {% if request.design_mode %}
-      <div class="pixobe-empty-state" role="status">
-        <p class="pixobe-empty-state__title">{{ 'pixobe.empty_state.title' | t }}</p>
-        <p class="pixobe-empty-state__body">{{ 'pixobe.empty_state.body' | t }}</p>
-        <div class="pixobe-empty-state__actions">
-          <a
-            href="{{ app_admin_url }}"
-            class="pixobe-empty-state__link"
-            target="_blank"
-            rel="noreferrer"
-          >
-            {{ 'pixobe.empty_state.enable_customization' | t }}
-          </a>
-        </div>
-      </div>
-    {% endif %}
-  {% endif %}
+  {% render 'customize-button',
+    is_configured: is_configured,
+    config_url: config_url,
+    button_label: block.settings.button_label,
+    button_border_radius: block.settings.button_border_radius,
+    button_max_width: block.settings.button_max_width,
+    button_full_width: block.settings.button_full_width,
+    button_background_color: block.settings.button_background_color,
+    button_text_color: block.settings.button_text_color,
+    button_hover_color: block.settings.button_hover_color,
+    button_text_hover_color: block.settings.button_text_hover_color,
+    button_border_width: block.settings.button_border_width,
+    button_border_color: block.settings.button_border_color
+  %}
 </div>
 
 {% schema %}
@@ -62,24 +47,64 @@
   "name": "Product Customize Button",
   "target": "section",
   "settings": [
-    { "type": "color", "id": "button_background_color", "label": "Button colour", "default": "#000000" },
-    { "type": "color", "id": "button_text_color", "label": "Button text colour", "default": "#ffffff" },
-    { "type": "color", "id": "button_hover_color", "label": "Button hover colour", "default": "#000000" },
-    { "type": "color", "id": "button_text_hover_color", "label": "Button text hover colour", "default": "#ffffff" },
-    { "type": "number", "id": "button_border_radius", "label": "Button border radius", "default": 14 },
-    { "type": "number", "id": "button_margin", "label": "Margin Top", "default": 16 },
+    { "type": "text", "id": "button_label", "label": "Label", "default": "Customize" },
+    { "type": "color", "id": "button_background_color", "label": "Colour", "default": "#000000" },
+    { "type": "color", "id": "button_text_color", "label": "Text colour", "default": "#ffffff" },
+    { "type": "color", "id": "button_hover_color", "label": "Hover colour", "default": "#000000" },
+    { "type": "color", "id": "button_text_hover_color", "label": "Text hover colour", "default": "#ffffff" },
+    { "type": "color", "id": "button_border_color", "label": "Border colour", "default": "#000000" },
+    {
+      "type": "range",
+      "id": "button_margin",
+      "label": "Margin",
+      "min": 0,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "button_padding",
+      "label": "Padding",
+      "min": 0,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "button_border_radius",
+      "label": "Border Radius",
+      "min": 0,
+      "max": 32,
+      "step": 1,
+      "unit": "px",
+      "default": 28
+    },
     {
       "type": "range",
       "id": "button_border_width",
-      "label": "Button border width",
+      "label": "Border width",
       "min": 0,
       "max": 10,
       "step": 1,
       "unit": "px",
       "default": 1
     },
-    { "type": "color", "id": "button_border_color", "label": "Button border colour", "default": "#000000" },
-    { "type": "checkbox", "id": "button_full_width", "label": "Full width button", "default": false }
+    {
+      "type": "range",
+      "id": "button_max_width",
+      "label": "Button Max Width",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "rem",
+      "default": 1
+    },
+    { "type": "checkbox", "id": "button_full_width", "label": "Full width", "default": true },
+    { "type": "checkbox", "id": "hide_button", "label": "Hide Button", "default": false }
   ]
 }
 {% endschema %}

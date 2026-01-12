@@ -1,7 +1,5 @@
 {
-  "button": {
-    "customize": "Customize"
-  },
+  "Customize": "Customize",
   "pixobe": {
     "empty_state": {
       "title": "Customization is not available yet",

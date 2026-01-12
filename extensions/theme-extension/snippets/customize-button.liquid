@@ -1,29 +1,36 @@
-<div>
-  {% assign config = app.metafields.app_config.metadata_app.value %}
-  {% assign current_variant = product.selected_or_first_available_variant %}
-  {%- assign locale = localization.language.iso_code -%}
+{%- assign locale = localization.language.iso_code -%}
+{% assign current_variant = product.selected_or_first_available_variant %}
 
-  {% if product.id %}
-    <p-spcustomize-button
-      product-id="{{ product.id}}"
-      variant-id="{{ current_variant.id }}"
-      label="{{'button.customize' | t}}"
-      locale="{{locale}}"
-      style="
-        --p-btn-background: {{ button_background_color }};
-        --p-btn-text: {{ button_text_color }};
-        --p-btn-hover-background: {{ button_hover_color }};
-        --p-btn-hover-text: {{ button_text_hover_color }};
-        --p-btn-radius: {{ button_border_radius }}px;
-        --p-btn-border: {{ button_border_width }}px solid {{ button_border_color }};
-        --p-btn-width: {% if button_full_width %}100%{% else %}auto{% endif %};
-      "
-    >
-      ></p-spcustomize-button
-    >
-  {% endif %}
+{% comment %} Capture translation and check for missing key {% endcomment %}
+{% capture translated_button_label %}{{ button_label | t }}{% endcapture %}
+
+{% if translated_button_label contains 'Translation missing' or translated_button_label == blank %}
+  {%- assign translated_button_label = button_label -%}
+{% endif %}
+
+<style>
+  .pixobe-customize {
+    --p-btn-background: {{ block.settings.button_background_color | default: '#111' }};
+    --p-btn-text: {{ block.settings.button_text_color | default: '#fff' }};
+    --p-btn-hover-background: {{ block.settings.button_hover_color | default: '#000' }};
+    --p-btn-hover-text: {{ block.settings.button_text_hover_color | default: '#fff' }};
+    --p-btn-radius: {{ block.settings.button_border_radius | default: 0 }}px;
+    --p-btn-border: {{ block.settings.button_border_width | default: 1 }}px solid {{ block.settings.button_border_color | default: 'rgba(0,0,0,0.15)' }};
+    --p-btn-width: {% if block.settings.button_full_width %}100%{% else %}auto{% endif %};
+    --p-btn-margin: {{ block.settings.button_margin | default: 16 }}px 0;
+    --p-btn-padding:{{ block.settings.button_padding | default: 16 }}px;
+    --p-btn-max-width:{{ block.settings.button_max_width | default: 100 }}rem;
+  }
+</style>
+
+<div class="pixobe-customize-{{ block.id }}">
+  <p-shopify-customizebtn
+    product-id="{{ product.id }}"
+    variant-id="{{ current_variant.id }}"
+    label="{{ translated_button_label | escape }}"
+    locale="{{ locale }}"
+    is-configured="{{is_configured}}"
+    configuration-url="{{config_url}}"
+  >
+  </p-shopify-customizebtn>
 </div>
-
-<script>
-  window.pixobeProductConfig= {{config |json}};
-</script>

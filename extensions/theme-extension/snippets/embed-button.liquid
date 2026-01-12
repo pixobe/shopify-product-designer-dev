@@ -17,8 +17,9 @@
     --p-btn-radius: {{ block.settings.button_border_radius | default: 0 }}px;
     --p-btn-border: {{ block.settings.button_border_width | default: 1 }}px solid {{ block.settings.button_border_color | default: 'rgba(0,0,0,0.15)' }};
     --p-btn-width: {% if block.settings.button_full_width %}100%{% else %}auto{% endif %};
-    --p-btn-margin: 1rem 0;
-    --p-btn-padding: 0.75rem 1rem;
+    --p-btn-margin: {{ block.settings.button_margin | default: 16 }}px 0;
+    --p-btn-padding:{{ block.settings.button_padding | default: 16 }}px;
+    --p-btn-max-width:{{ block.settings.button_max_width | default: 100 }}rem;
   }
 </style>
 

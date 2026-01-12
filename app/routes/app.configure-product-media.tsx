@@ -85,6 +85,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function CustomizePage() {
   const loaderData = useLoaderData<any>();
+
   const {
     productId,
     productName,
@@ -216,6 +217,7 @@ export default function CustomizePage() {
     ? variantOptionsMap.get(selectedVariantKey) ?? null
     : null;
   const selectedVariantId = selectedVariant?.variantId ?? null;
+
   const activeVariantMedia = useMemo(() => {
     if (!selectedVariantId) {
       return selectedMedia;
@@ -225,7 +227,12 @@ export default function CustomizePage() {
       isMediaForVariant(item, selectedVariantId),
     );
   }, [selectedMedia, selectedVariantId]);
-  const selectedVariantLabel = selectedVariant?.label ?? null;
+
+  const selectedVariantLabel =
+    variantOptions.length === 1
+      ? productName
+      : selectedVariant?.label ?? productName;
+
 
   const pendingSelectionIds = useMemo(
     () => new Set(pendingMedia.keys()),
@@ -382,8 +389,8 @@ export default function CustomizePage() {
 
   return (
     <s-page heading={productName ? `${productName}` : "Product Search"}>
-      <s-section heading="Variants">
-        {variantOptions.length > 0 ? (
+      {variantOptions.length > 1 && (
+        <s-section heading="Variants">
           <s-stack gap="small">
             <s-text>Select a variant to upload and manage media for.</s-text>
             <div
@@ -423,12 +430,10 @@ export default function CustomizePage() {
               })}
             </div>
           </s-stack>
-        ) : (
-          <s-text color="subdued">No variants available for this product.</s-text>
-        )}
-      </s-section>
+        </s-section>
+      )}
 
-      <s-section heading={selectedVariantLabel ? `Media for ${selectedVariantLabel}` : "Media"}>
+      <s-section heading={`Media for ${selectedVariantLabel}`}>
         <s-stack direction="inline" gap="base">
           <s-button onClick={openMediaModal}>Add Media</s-button>
           {selectedCount > 0 && (
