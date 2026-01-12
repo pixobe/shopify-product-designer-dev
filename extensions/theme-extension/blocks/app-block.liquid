@@ -1,12 +1,9 @@
 <script>
   (function () {
-    if (!window.customElements || customElements.get('p-customize-button')) {
-      return;
-    }
-    var script = document.createElement('script');
+    const script = document.createElement('script');
     script.type = 'module';
     script.async = true;
-    script.src = 'https://product.pixobe.com/product-designer.js';
+    script.src = 'https://localapp.pixobe.com/build/product-designer.esm.js';
     document.head.appendChild(script);
   })();
 </script>
@@ -24,16 +21,16 @@
 {% assign app_admin_url = 'https://admin.shopify.com/store/'
   | append: shop.permanent_domain
   | remove: '.myshopify.com'
-  | append: '/apps/pixobe-product-designer/app/customize?id=gid%3A%2F%2Fshopify%2FProduct%2F'
+  | append: '/apps/pixobe-product-designer/app/configure-product-media?id=gid%3A%2F%2Fshopify%2FProduct%2F'
   | append: product.id
 %}
 
 <div class="pixobe-product-design-block" {{ block.shopify_attributes }}>
   {% if has_media %}
-    {% render 'button',
+    {% render 'customize-button',
       button_border_radius: block.settings.button_border_radius,
       button_full_width: block.settings.button_full_width,
-      button_background_color: block.settings.colour,
+      button_background_color: block.settings.button_background_color,
       button_text_color: block.settings.button_text_color,
       button_hover_color: block.settings.button_hover_color,
       button_text_hover_color: block.settings.button_text_hover_color,
@@ -62,15 +59,15 @@
 
 {% schema %}
 {
-  "name": "Product Design",
+  "name": "Product Customize Button",
   "target": "section",
   "settings": [
-    { "type": "product", "id": "product", "label": "product", "autofill": true },
-    { "type": "color", "id": "colour", "label": "Button colour", "default": "#000000" },
+    { "type": "color", "id": "button_background_color", "label": "Button colour", "default": "#000000" },
     { "type": "color", "id": "button_text_color", "label": "Button text colour", "default": "#ffffff" },
     { "type": "color", "id": "button_hover_color", "label": "Button hover colour", "default": "#000000" },
     { "type": "color", "id": "button_text_hover_color", "label": "Button text hover colour", "default": "#ffffff" },
     { "type": "number", "id": "button_border_radius", "label": "Button border radius", "default": 14 },
+    { "type": "number", "id": "button_margin", "label": "Margin Top", "default": 16 },
     {
       "type": "range",
       "id": "button_border_width",

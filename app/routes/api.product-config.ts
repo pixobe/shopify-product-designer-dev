@@ -2,9 +2,12 @@ import { data, type LoaderFunctionArgs } from "react-router";
 import { authenticate } from "../shopify.server";
 import {
   getProductMedia,
+  getProductVariantMedia,
   getVariantContext,
 } from "app/utils/graphql/product-media";
 import { normalizeVariantId } from "app/utils/common-utils";
+import { METADATA_FIELD_APP_SETTINGS } from "app/constants/settings";
+import { getAppMetafield } from "app/utils/graphql/app-metadata";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.public.appProxy(request);
@@ -28,23 +31,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       return data({ error: "Variant ID is required" }, { status: 400 });
     }
 
-    const variantContext = await getVariantContext(admin, variantId);
-    if (!variantContext) {
-      return data({ error: "Variant not found" }, { status: 404 });
+    const [variantDetails, config] = await Promise.all([
+      getProductVariantMedia(admin, variantId),
+      getAppMetafield(admin, METADATA_FIELD_APP_SETTINGS),
+    ]);
+
+    const meta = { name: variantDetails.name, id: variantDetails.id };
+    const media = variantDetails.media;
+
+    if (!media) {
+      return data({ error: "Product is not configured" }, { status: 400 });
     }
 
-    const productMedia = await getProductMedia(admin, variantContext.productId);
-    const matchedVariant = productMedia?.variants?.find(
-      (variant: any) => variant.id === variantId,
-    );
-
     return data({
-      productName:
-        variantContext.productName ?? productMedia?.productName ?? "",
-      variantName: variantContext.variantName ?? matchedVariant?.name ?? "",
-      variantId: variantContext.variantId ?? variantId,
-      variantPrice: variantContext.variantPrice ?? null,
-      media: matchedVariant?.media ?? [],
+      meta,
+      config,
+      media: media ?? [],
     });
   } catch (error: any) {
     console.error("Failed to load variant media", error);

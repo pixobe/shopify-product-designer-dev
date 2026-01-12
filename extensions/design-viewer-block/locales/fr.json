@@ -1,5 +1,7 @@
 {
   "name": "View Customization",
-  "title": "Open the product’s customization details for this order.",
-  "linkTitle": "Open Customization"
+  "title": "to open the customization for this order.",
+  "linkTitle": "Click here",
+  "loading": "Checking customization status...",
+  "notCustomized": "The order is not customized"
 }

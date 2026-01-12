@@ -1,23 +1,27 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
-import FileSaver from 'file-saver';
-
+import { FormEvent, useEffect, useState } from "react";
 
 /**
  * 
  */
+type OrderCustomizationItem = {
+  lineItemId: string | null;
+  variantId: string | null;
+  pixobeId: string;
+  meta: {
+    id: string;
+    name: string | null;
+  } | null;
+  media: unknown;
+  data: unknown;
+};
+
 type OrderCustomizationSuccess = {
-  ok: true;
   order: {
     id: string;
     name: string | null;
   };
-  file: {
-    id: string;
-    url: string;
-    mimeType: string | null;
-    fileStatus: string | null;
-  };
-  fileData: unknown;
+  items: OrderCustomizationItem[];
+  config: unknown;
 };
 
 
@@ -28,19 +32,6 @@ export default function OrderCustomizationsPage() {
   const [customization, setCustomization] =
     useState<OrderCustomizationSuccess | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-
-  const [initialized, setInitialized] = useState(false);
-  const viewerRef = useRef<any>(null);
-
-  useEffect(() => {
-    const viewer = viewerRef.current;
-    if (viewer) {
-      viewer.addEventListener('loaded', (e: any) => {
-        setInitialized(e.detail);
-      });
-    }
-  }, [customization]);
 
 
   useEffect(() => {
@@ -102,67 +93,51 @@ export default function OrderCustomizationsPage() {
     }
   };
 
-
-  const handleSearch = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    searchOrder(query.trim());
-  };
-
   return (
     <s-page heading="Order Customization">
-      {/* Search Section — always visible unless auto-loaded? 
-          The requirement says: show normal search field when order_id NOT provided.
-          We still show it even when auto-loaded, so user can search again. */}
-      <s-section>
-        <form onSubmit={handleSearch}>
-          <s-stack direction="inline" gap="base">
-            <s-search-field
-              label="Search"
-              labelAccessibilityVisibility="exclusive"
-              placeholder="Enter Order ID. eg: 7026433098032"
-              value={query}
-              onInput={(event: any) => {
-                setQuery(event?.target?.value ?? "");
-              }}
-            />
-            <s-button type="submit" variant="primary">
-              Search
-            </s-button>
-          </s-stack>
-        </form>
-      </s-section>
 
-      <s-section>
-        <s-grid alignItems="center">
-          {status === "loading" && <s-spinner accessibilityLabel="Loading" size="large-100" />}
+      <s-grid alignItems="center">
+        {status === "loading" &&
+          <s-grid blockSize="100%" inlineSize="100%" background="subdued" padding="small"
+            justifyContent="center">
+            <s-spinner accessibilityLabel="Loading" size="large" />
+          </s-grid>}
 
-          {status === "error" && error && (
-            <s-text tone="critical">{error}</s-text>
-          )}
-          {status === "success" && customization && (
-            <s-section>
-              <s-grid>
-                {initialized === false &&
-                  <s-box padding="base">
-                    <s-spinner accessibilityLabel="Loading" size="large-100" />
-                  </s-box>
-                }
-                <p-viewdesign
-                  ref={viewerRef}
-                  meta={customization.meta}
-                  media={customization.media}
-                  data={customization.data?.design}
-                  config={customization.config}></p-viewdesign>
-              </s-grid>
-            </s-section>
-          )}
+        {status === "error" && error && (
+          <s-text tone="critical">{error}</s-text>
+        )}
+        {status === "success" && customization && (
+          <s-grid>
+            {customization.items.map((item, index) => (
+              <s-box
+                padding="base"
+                key={item.lineItemId ?? item.pixobeId ?? `item-${index}`}
+              >
+                <s-section>
+                  {item.meta?.name && (
+                    <s-heading>{item.meta.name}</s-heading>
+                  )}
 
-          {status === "idle" && (
-            <s-text>Enter an order ID to preview its saved customization.</s-text>
-          )}
-        </s-grid>
+                  <p-viewdesign
+                    meta={item.meta}
+                    media={item.media}
+                    data={
+                      (item.data as { design?: unknown } | null | undefined)
+                        ?.design
+                    }
+                    config={customization.config}
+                  ></p-viewdesign>
+                </s-section>
+              </s-box>
+            ))}
+          </s-grid>
 
-      </s-section>
+        )}
+
+        {status === "idle" && (
+          <s-text>Enter an order ID to preview its saved customization.</s-text>
+        )}
+      </s-grid>
     </s-page>
   );
 }

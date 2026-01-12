@@ -15,6 +15,10 @@ import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { getAppMetafield, setAppMetafield } from "app/utils/graphql/app-metadata";
 import { METADATA_FIELD_APP_SETTINGS } from "app/constants/settings";
+import {
+  ensureCustomizationProduct,
+  normalizePrice,
+} from "app/utils/custom-price-product.utils";
 
 
 type FontEntry = {
@@ -70,6 +74,15 @@ type SettingsActionResponse = {
   settings?: SavedSettings;
   metaobjectId?: string;
   error?: string;
+  success?: boolean;
+};
+
+type ToastOptions = {
+  action?: string;
+  duration?: number;
+  isError?: boolean;
+  onAction?: () => void;
+  onDismiss?: () => void;
 };
 
 const createGalleryMediaItemFromUrl = (url: string): GalleryMediaItem => ({
@@ -138,7 +151,29 @@ export const action = async ({
       );
     }
     const body = await request.json();
-    return setAppMetafield(admin, METADATA_FIELD_APP_SETTINGS, body);
+    const { amount: customizationPriceAmount, formatted: customizationPrice } =
+      normalizePrice(body?.customizationPrice);
+
+    body.customizationPrice = customizationPrice;
+
+    if (customizationPriceAmount > 0) {
+      await ensureCustomizationProduct(admin, customizationPrice);
+    }
+
+    const result = await setAppMetafield(
+      admin,
+      METADATA_FIELD_APP_SETTINGS,
+      body,
+    );
+
+    if (!result?.success) {
+      return data(
+        { error: result?.message ?? "Failed to persist settings" },
+        { status: 500 },
+      );
+    }
+
+    return data({ settings: body, success: true }, { status: 200 });
   } catch (error: any) {
     console.error("Failed to persist Pixobe app settings", error);
     return data(
@@ -154,6 +189,14 @@ export default function SettingsRoute() {
   const { settings } = useLoaderData<typeof loader>();
 
   const settingsFetcher = useFetcher<SettingsActionResponse>();
+  const showToast = (message: string, options?: ToastOptions) => {
+    const toast = (globalThis as { shopify?: { toast?: { show?: Function } } })
+      ?.shopify?.toast;
+    if (!toast?.show) {
+      return;
+    }
+    toast.show(message, options);
+  };
   const [snapAngle, setSnapAngle] = useState(
     () => settings?.snapAngle ?? "45",
   );
@@ -215,7 +258,14 @@ export default function SettingsRoute() {
 
   useEffect(() => {
     const response = settingsFetcher.data;
-    const nextSettings = response?.settings;
+    if (!response) {
+      return;
+    }
+    if (response.error) {
+      showToast(response.error, { isError: true });
+      return;
+    }
+    const nextSettings = response.settings;
     if (!nextSettings) {
       return;
     }

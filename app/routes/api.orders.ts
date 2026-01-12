@@ -14,6 +14,12 @@ const looksLikeOrderId = (value: string) =>
 const normalizeOrderId = (value: string) =>
   value.startsWith(ORDER_ID_PREFIX) ? value : `${ORDER_ID_PREFIX}${value}`;
 
+type CustomizedLineItem = {
+  item: any;
+  pixobeId: string;
+  variantId: string;
+};
+
 const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -27,6 +33,7 @@ query OrderCustomization($id: ID!) {
     name
     lineItems(first: 50) {
       nodes {
+        id
         variant {
           id
           product {
@@ -99,14 +106,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return data({ message: "Order not found" }, 404);
   }
 
-  const lineItemWithAttribute = (order.lineItems?.nodes ?? []).find(
+  const lineItemsWithAttribute = (order.lineItems?.nodes ?? []).filter(
     (item: any) =>
       (item.customAttributes ?? []).some(
         (attr: any) => attr?.key === PIXOBE_CART_CONFIG_PROPERTY_KEY,
       ),
   );
 
-  if (!lineItemWithAttribute) {
+  if (!lineItemsWithAttribute.length) {
     return data(
       {
         message: "The item is not customized",
@@ -115,33 +122,59 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     );
   }
 
-  // Now extract the attribute value
-  const attribute = lineItemWithAttribute.customAttributes.find(
-    (attr: any) => attr.key === PIXOBE_CART_CONFIG_PROPERTY_KEY,
-  );
+  const customizedLineItems = lineItemsWithAttribute
+    .map((item: any) => {
+      const attribute = (item.customAttributes ?? []).find(
+        (attr: any) => attr?.key === PIXOBE_CART_CONFIG_PROPERTY_KEY,
+      );
+      const pixobeId = attribute?.value?.trim() ?? "";
+      const variantId = item.variant?.id ?? null;
 
-  const pixobeId = attribute?.value?.trim() ?? "";
+      if (!pixobeId || !variantId) {
+        return null;
+      }
 
-  if (!pixobeId) {
-    return data({ message: `_pixobeid attribute empty on ${order.id}` }, 404);
+      return { item, pixobeId, variantId };
+    })
+    .filter(Boolean) as CustomizedLineItem[];
+
+  if (!customizedLineItems.length) {
+    return data(
+      { message: `_pixobeid attribute empty on ${order.id}` },
+      404,
+    );
   }
 
-  const variant = lineItemWithAttribute.variant ?? null;
-  const variantId = variant?.id ?? null;
+  const config = await getAppMetafield(admin, METADATA_FIELD_APP_SETTINGS);
 
-  const [variantDetails, config, customizedData] = await Promise.all([
-    getProductVariantMedia(admin, variantId),
-    getAppMetafield(admin, METADATA_FIELD_APP_SETTINGS),
-    getAppMetafield(admin, pixobeId),
-  ]);
+  const items = await Promise.all(
+    customizedLineItems.map(async ({ item, pixobeId, variantId }) => {
+      const [variantDetails, customizedData] = await Promise.all([
+        getProductVariantMedia(admin, variantId),
+        getAppMetafield(admin, pixobeId),
+      ]);
 
-  const meta = { name: variantDetails.name, id: variantDetails.id };
-  const media = variantDetails.media;
+      const meta = variantDetails
+        ? { name: variantDetails.name, id: variantDetails.id }
+        : null;
+
+      return {
+        lineItemId: item?.id ?? null,
+        variantId,
+        pixobeId,
+        meta,
+        media: variantDetails?.media ?? [],
+        data: customizedData,
+      };
+    }),
+  );
 
   return data({
-    media,
-    meta,
-    data: customizedData,
+    order: {
+      id: order.id,
+      name: order.name ?? null,
+    },
+    items,
     config,
   });
 };

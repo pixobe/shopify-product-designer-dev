@@ -1,0 +1,35 @@
+{%- assign locale = localization.language.iso_code -%}
+{% assign current_variant = product.selected_or_first_available_variant %}
+
+{% comment %} Capture translation and check for missing key {% endcomment %}
+{% capture translated_button_label %}{{ button_label | t }}{% endcapture %}
+
+{% if translated_button_label contains 'Translation missing' or translated_button_label == blank %}
+  {%- assign translated_button_label = button_label -%}
+{% endif %}
+
+<style>
+  .pixobe-customize {
+    --p-btn-background: {{ block.settings.button_background_color | default: '#111' }};
+    --p-btn-text: {{ block.settings.button_text_color | default: '#fff' }};
+    --p-btn-hover-background: {{ block.settings.button_hover_color | default: '#000' }};
+    --p-btn-hover-text: {{ block.settings.button_text_hover_color | default: '#fff' }};
+    --p-btn-radius: {{ block.settings.button_border_radius | default: 0 }}px;
+    --p-btn-border: {{ block.settings.button_border_width | default: 1 }}px solid {{ block.settings.button_border_color | default: 'rgba(0,0,0,0.15)' }};
+    --p-btn-width: {% if block.settings.button_full_width %}100%{% else %}auto{% endif %};
+    --p-btn-margin: 1rem 0;
+    --p-btn-padding: 0.75rem 1rem;
+  }
+</style>
+
+<div class="pixobe-customize-{{ block.id }}">
+  <p-shopify-embedblock
+    product-id="{{ product.id }}"
+    variant-id="{{ current_variant.id }}"
+    label="{{ translated_button_label | escape }}"
+    locale="{{ locale }}"
+    is-configured="{{is_configured}}"
+    configuration-url="{{config_url}}"
+  >
+  </p-shopify-embedblock>
+</div>

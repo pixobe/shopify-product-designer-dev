@@ -1,0 +1,77 @@
+<script>
+  (function () {
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.async = true;
+    script.src = 'https://localapp.pixobe.com/build/product-designer.esm.js';
+    document.head.appendChild(script);
+  })();
+</script>
+
+{%- assign variants = product.variants -%}
+{%- for v in variants -%}
+  {%- assign media_items = v.metafields['$app'].pixobe_media_items.value -%}
+  {%- assign has_media = false -%}
+  {%- if media_items != blank and media_items.size > 0 -%}
+    {%- assign has_media = true -%}
+    {%- break -%}
+  {%- endif -%}
+{%- endfor -%}
+
+{% assign config_url = 'https://admin.shopify.com/store/'
+  | append: shop.permanent_domain
+  | remove: '.myshopify.com'
+  | append: '/apps/pixobe-product-designer/app/configure-product-media?id=gid%3A%2F%2Fshopify%2FProduct%2F'
+  | append: product.id
+%}
+
+{% render 'embed-button',
+  is_configured: has_media,
+  config_url: config_url,
+  button_label: block.settings.button_label,
+  button_border_radius: block.settings.button_border_radius,
+  button_full_width: block.settings.button_full_width,
+  button_background_color: block.settings.button_background_color,
+  button_text_color: block.settings.button_text_color,
+  button_hover_color: block.settings.button_hover_color,
+  button_text_hover_color: block.settings.button_text_hover_color,
+  button_border_width: block.settings.button_border_width,
+  button_border_color: block.settings.button_border_color
+%}
+
+{% schema %}
+{
+  "name": "Product Designer",
+  "target": "body",
+  "settings": [
+    { "type": "text", "id": "button_label", "label": "Label", "default": "Customize" },
+    { "type": "color", "id": "button_background_color", "label": "Colour", "default": "#000000" },
+    { "type": "color", "id": "button_text_color", "label": "Text colour", "default": "#ffffff" },
+    { "type": "color", "id": "button_hover_color", "label": "Hover colour", "default": "#000000" },
+    { "type": "color", "id": "button_text_hover_color", "label": "Text hover colour", "default": "#ffffff" },
+    { "type": "color", "id": "button_border_color", "label": "Border colour", "default": "#000000" },
+    { "type": "number", "id": "button_margin", "label": "Margin", "default": 16 },
+    {
+      "type": "range",
+      "id": "button_border_radius",
+      "label": "Border Radius",
+      "min": 0,
+      "max": 30,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "button_border_width",
+      "label": "Border width",
+      "min": 0,
+      "max": 10,
+      "step": 1,
+      "unit": "px",
+      "default": 1
+    },
+    { "type": "checkbox", "id": "button_full_width", "label": "Full width", "default": true }
+  ]
+}
+{% endschema %}
