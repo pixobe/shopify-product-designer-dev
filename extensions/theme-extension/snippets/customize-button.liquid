@@ -1,12 +1,29 @@
 {%- assign locale = localization.language.iso_code -%}
-{% assign current_variant = product.selected_or_first_available_variant %}
 
-{% comment %} Capture translation and check for missing key {% endcomment %}
+{%- assign button_label = block.settings.button_label %}
+
+{% assign current_variant = product.selected_or_first_available_variant %}
 {% capture translated_button_label %}{{ button_label | t }}{% endcapture %}
 
 {% if translated_button_label contains 'Translation missing' or translated_button_label == blank %}
   {%- assign translated_button_label = button_label -%}
 {% endif %}
+
+{%- assign variants = product.variants -%}
+{%- for v in variants -%}
+  {%- assign media_items = v.metafields['$app'].pixobe_media_items.value -%}
+  {%- assign is_configured = false -%}
+  {%- if media_items != blank and media_items.size > 0 -%}
+    {%- assign is_configured = true -%}
+    {%- break -%}
+  {%- endif -%}
+{%- endfor -%}
+{% assign config_url = 'https://admin.shopify.com/store/'
+  | append: shop.permanent_domain
+  | remove: '.myshopify.com'
+  | append: '/apps/pixobe-product-designer/app/configure-product-media?id=gid%3A%2F%2Fshopify%2FProduct%2F'
+  | append: product.id
+%}
 
 <style>
   .pixobe-customize {
@@ -23,14 +40,28 @@
   }
 </style>
 
-<div class="pixobe-customize-{{ block.id }}">
-  <p-shopify-customizebtn
-    product-id="{{ product.id }}"
-    variant-id="{{ current_variant.id }}"
-    label="{{ translated_button_label | escape }}"
-    locale="{{ locale }}"
-    is-configured="{{is_configured}}"
-    configuration-url="{{config_url}}"
-  >
-  </p-shopify-customizebtn>
-</div>
+{% if request.design_mode or is_configured %}
+  <div class="pixobe-customize-{{ block.id }}">
+    {% if is_embed %}
+      <p-shopify-embedblock
+        product-id="{{ product.id }}"
+        variant-id="{{ current_variant.id }}"
+        label="{{ translated_button_label | escape }}"
+        locale="{{ locale }}"
+        is-configured="{{is_configured}}"
+        configuration-url="{{config_url}}"
+      >
+      </p-shopify-embedblock>
+    {% else %}
+      <p-shopify-customizebtn
+        product-id="{{ product.id }}"
+        variant-id="{{ current_variant.id }}"
+        label="{{ translated_button_label | escape }}"
+        locale="{{ locale }}"
+        is-configured="{{is_configured}}"
+        configuration-url="{{config_url}}"
+      >
+      </p-shopify-customizebtn>
+    {% endif %}
+  </div>
+{% endif %}

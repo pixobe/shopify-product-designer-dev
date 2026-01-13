@@ -402,12 +402,13 @@ export default function SettingsRoute() {
               value={snapAngle}
               onInput={(event) => setSnapAngle(event.currentTarget.value)}
             />
-            <s-text-field
+            <s-text color="subdued">Sets the element’s rotation to the angle specified above and disables free rotation of text or image on the design.</s-text>
+            {/* <s-text-field
               label="Customization price"
               name="customizationPrice"
               value={customizationPrice}
               onInput={(event) => setCustomizationPrice(event.currentTarget.value)}
-            />
+            /> */}
           </s-section>
           <s-section heading="Customer Support Information">
             <s-text-area
