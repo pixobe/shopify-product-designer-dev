@@ -1,5 +1,6 @@
 services:
-  pixobe-api:
+  shopify-product-designer:
+    container_name: shopify-product-designer-${ENVIRONMENT:-prod}
     restart: always
     image: pixobe.com/shopify-product-designer-dev:${APP_VERSION}
     ports:
