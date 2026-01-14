@@ -123,8 +123,12 @@ const toGalleryEntries = (galleries?: GallerySummary[]): GalleryEntry[] => {
 export const loader = async ({
   request,
 }: LoaderFunctionArgs): Promise<{ settings: Record<string, any> }> => {
-  const { admin } = await authenticate.admin(request);
-  let settings = await getAppMetafield(admin, METADATA_FIELD_APP_SETTINGS);
+  const { admin, session } = await authenticate.admin(request);
+  let settings = await getAppMetafield(
+    admin,
+    METADATA_FIELD_APP_SETTINGS,
+    { shop: session.shop },
+  );
   if (!settings) {
     settings = {
       fonts: [],
@@ -164,6 +168,7 @@ export const action = async ({
       admin,
       METADATA_FIELD_APP_SETTINGS,
       body,
+      { shop },
     );
 
     if (!result?.success) {
@@ -403,12 +408,6 @@ export default function SettingsRoute() {
               onInput={(event) => setSnapAngle(event.currentTarget.value)}
             />
             <s-text color="subdued">Sets the element’s rotation to the angle specified above and disables free rotation of text or image on the design.</s-text>
-            {/* <s-text-field
-              label="Customization price"
-              name="customizationPrice"
-              value={customizationPrice}
-              onInput={(event) => setCustomizationPrice(event.currentTarget.value)}
-            /> */}
           </s-section>
           <s-section heading="Customer Support Information">
             <s-text-area

@@ -75,7 +75,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
   }
 
-
   return data({
     productId,
     productName: "",

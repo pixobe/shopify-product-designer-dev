@@ -64,7 +64,7 @@ query GenericFileCustomization($id: ID!) {
 `;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
 
   const url = new URL(request.url);
   const rawOrderId = (url.searchParams.get("orderId") ?? "").trim();
@@ -145,7 +145,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     );
   }
 
-  const config = await getAppMetafield(admin, METADATA_FIELD_APP_SETTINGS);
+  const config = await getAppMetafield(
+    admin,
+    METADATA_FIELD_APP_SETTINGS,
+    { shop: session.shop },
+  );
 
   const items = await Promise.all(
     customizedLineItems.map(async ({ item, pixobeId, variantId }) => {

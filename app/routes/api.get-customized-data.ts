@@ -3,7 +3,8 @@ import { authenticate } from "../shopify.server";
 import { getCustomizedData } from "app/utils/customized-data";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { admin, storefront } = await authenticate.public.appProxy(request);
+  const { admin, storefront, session } =
+    await authenticate.public.appProxy(request);
 
   if (!admin || !storefront) {
     return data({ error: "Unauthorized" }, { status: 401 });
@@ -18,7 +19,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   try {
-    const payload = await getCustomizedData(admin, pixobeId, variantId);
+    const payload = await getCustomizedData(
+      admin,
+      variantId,
+      pixobeId,
+      session?.shop,
+    );
     if (!payload) {
       return data({ error: "Customized data not found" }, { status: 404 });
     }

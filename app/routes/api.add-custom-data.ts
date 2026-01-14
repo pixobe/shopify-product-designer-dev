@@ -6,13 +6,10 @@ import {
 } from "react-router";
 import { randomUUID } from "node:crypto";
 import { authenticate } from "../shopify.server";
-import {
-  setAppMetafield,
-  updateAppMetaField as updateAppMetafield,
-} from "app/utils/graphql/app-metadata";
+import { setAppMetafield } from "app/utils/graphql/app-metadata";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin } = await authenticate.public.appProxy(request);
+  const { admin, session } = await authenticate.public.appProxy(request);
   if (!admin) {
     return data({ error: "Unauthorized" }, { status: 401 });
   }
@@ -21,7 +18,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const url = new URL(request.url);
     const pixobeId = url.searchParams.get("pixobeId");
     const key = pixobeId ?? randomUUID();
-    const result = await setAppMetafield(admin, key, body);
+    const result = await setAppMetafield(admin, key, body, {
+      shop: session?.shop,
+    });
     if (!result.success) {
       return data(
         { error: result.message ?? "Failed to save app data" },
