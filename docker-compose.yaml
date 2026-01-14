@@ -3,7 +3,7 @@ services:
     restart: always
     image: pixobe.com/shopify-product-designer-dev:${APP_VERSION}
     ports:
-      - 3003:3000
+      - ${SHOPIFY_APP_PORT}:3000
     environment:
       - SHOPIFY_API_KEY=${SHOPIFY_API_KEY}
       - SHOPIFY_API_SECRET=${SHOPIFY_API_SECRET}
