@@ -6,7 +6,7 @@ services:
     ports:
       - "${SHOPIFY_APP_PORT}:3000"
     env_file:
-      - .env.custom  # Or use .env.${ENVIRONMENT} if you pass ENVIRONMENT=custom
+      - .env.${ENV_TYPE}
     environment:
       # Use this only for overrides; env_file handles the rest
       - NODE_ENV=production

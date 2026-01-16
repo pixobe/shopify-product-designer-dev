@@ -9,6 +9,12 @@ APP_VERSION=1.79 docker compose -p shopify-custom --env-file .env.custom up -d -
 
 ## Debug
 
-```
+```bash
 docker compose -p shopify-custom --env-file .env.custom config
+```
+
+Prod
+
+```bash
+docker compose -p shopify-prod --env-file .env.prod config
 ```
