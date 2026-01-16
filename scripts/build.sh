@@ -1,6 +1,6 @@
 #/bin/bash
 
-docker build -t pixobe.com/shopify-product-designer-dev:$1 .
+docker build -t pixobe.com/shopify-product-designer:$1 .
 APP_VERSION=$1
 
 #update prod
