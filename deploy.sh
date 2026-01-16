@@ -1,10 +1,11 @@
 #!/bin/bash
+ENV=$1 # 'prod' or 'custom'
 
-# $1 is the environment (e.g., 'custom' or 'prod')
-echo "Deploying to environment: $1"
+echo "Deploying to environment: $ENV"
 
-docker compose -p shopify-$1 \
-  --env-file .env.$1 \
+# Pass ENV_TYPE to the docker compose command
+ENV_TYPE=$ENV APP_VERSION=latest docker compose -p shopify-$ENV \
+  --env-file .env.$ENV \
   up -d \
   --remove-orphans \
   --force-recreate
