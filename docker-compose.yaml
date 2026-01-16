@@ -6,6 +6,6 @@ services:
     ports:
       - "${SHOPIFY_APP_PORT}:3000"
     env_file:
-      - .env.${ENV_TYPE}  # Use a variable here
+      - .env.${ENVIRONMENT}  # Use a variable here
     environment:
       - NODE_ENV=production
