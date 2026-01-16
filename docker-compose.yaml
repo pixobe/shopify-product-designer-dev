@@ -1,7 +1,7 @@
 services:
   shopify-product-designer:
     # remove container_name
-    image: pixobe.com/shopify-product-designer-dev:${APP_VERSION}
+    image: pixobe.com/shopify-product-designer:${APP_VERSION}
     restart: always
     ports:
       - "${SHOPIFY_APP_PORT}:3000"
