@@ -1,16 +1,9 @@
 services:
   shopify-product-designer:
-    container_name: shopify-product-designer-${ENVIRONMENT:-prod}
+    # remove container_name
     image: pixobe.com/shopify-product-designer-dev:${APP_VERSION}
     restart: always
-
     ports:
       - "${SHOPIFY_APP_PORT}:3000"
-
-    # Inject ALL vars from the chosen env file into the container
     env_file:
       - .env.${ENVIRONMENT:-prod}
-
-    # Optional: keep only overrides or computed values here
-    environment:
-      NODE_ENV: "${NODE_ENV:-production}"

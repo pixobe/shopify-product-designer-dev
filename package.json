@@ -19,8 +19,8 @@
     "graphql-codegen": "graphql-codegen",
     "vite": "vite",
     "typecheck": "react-router typegen && tsc --noEmit",
-    "deploy:prod": "NODE_ENV=production sh ./scripts/deploy.sh prod $npm_config_version",
-    "deploy:custom": "NODE_ENV=production sh ./scripts/deploy.sh custom $npm_config_version"
+    "deploy:prod": "sh ./scripts/deploy.sh prod $npm_config_version",
+    "deploy:custom": "sh ./scripts/deploy.sh custom $npm_config_version"
   },
   "type": "module",
   "engines": {
