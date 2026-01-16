@@ -18,7 +18,9 @@
     "prisma": "prisma",
     "graphql-codegen": "graphql-codegen",
     "vite": "vite",
-    "typecheck": "react-router typegen && tsc --noEmit"
+    "typecheck": "react-router typegen && tsc --noEmit",
+    "deploy:prod": "NODE_ENV=production sh ./scripts/deploy.sh prod $npm_config_version",
+    "deploy:stage": "NODE_ENV=production sh ./scripts/deploy.sh stage $npm_config_version"
   },
   "type": "module",
   "engines": {

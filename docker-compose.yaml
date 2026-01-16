@@ -1,13 +1,16 @@
 services:
   shopify-product-designer:
     container_name: shopify-product-designer-${ENVIRONMENT:-prod}
-    restart: always
     image: pixobe.com/shopify-product-designer-dev:${APP_VERSION}
+    restart: always
+
     ports:
-      - ${SHOPIFY_APP_PORT}:3000
+      - "${SHOPIFY_APP_PORT}:3000"
+
+    # Inject ALL vars from the chosen env file into the container
+    env_file:
+      - .env.${ENVIRONMENT:-prod}
+
+    # Optional: keep only overrides or computed values here
     environment:
-      - SHOPIFY_API_KEY=${SHOPIFY_API_KEY}
-      - SHOPIFY_API_SECRET=${SHOPIFY_API_SECRET}
-      - SHOPIFY_APP_URL=${SHOPIFY_APP_URL}
-      - DATABASE_URL=${DATABASE_URL}
-      - SCOPES=${SCOPES}
+      NODE_ENV: "${NODE_ENV:-production}"
