@@ -67,7 +67,7 @@ upsert_env_var "APP_VERSION" "${APP_VERSION}" "${ENV_FILE}"
 upsert_env_var "APP_ENV" "${APP_ENV}" "${ENV_FILE}"
 
 # Build image with explicit version tag
-docker build -t "pixobe.com/shopify-product-designer:${APP_VERSION}" .
+docker build -t "pixobe.com.shopify-product-designer:${APP_VERSION}" .
 
 # Build (compose) and start the stack using selected env file
 # Explicit APP_VERSION is still provided to ensure interpolation works even if compose reads env differently.
