@@ -27,4 +27,6 @@ model Session {
   emailVerified       Boolean?  @default(false)
   refreshToken        String?
   refreshTokenExpires DateTime?
+  plan                String?
+  planExpires         DateTime?
 }
