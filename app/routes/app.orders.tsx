@@ -93,8 +93,30 @@ export default function OrderCustomizationsPage() {
     }
   };
 
+  const handleSearch = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    searchOrder(query.trim());
+  };
+
   return (
     <s-page heading="Order Customization">
+
+      <form onSubmit={handleSearch}>
+        <s-stack direction="inline" gap="base">
+          <s-search-field
+            label="Search"
+            labelAccessibilityVisibility="exclusive"
+            placeholder="Enter Order ID. eg: 7026433098032"
+            value={query}
+            onInput={(event: any) => {
+              setQuery(event?.target?.value ?? "");
+            }}
+          />
+          <s-button type="submit" variant="primary">
+            Search
+          </s-button>
+        </s-stack>
+      </form>
 
       <s-grid alignItems="center">
         {status === "loading" &&
@@ -131,11 +153,6 @@ export default function OrderCustomizationsPage() {
               </s-box>
             ))}
           </s-grid>
-
-        )}
-
-        {status === "idle" && (
-          <s-text>Enter an order ID to preview its saved customization.</s-text>
         )}
       </s-grid>
     </s-page>
