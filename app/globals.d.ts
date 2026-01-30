@@ -12,6 +12,13 @@ interface ViewDesignProps {
   children?: React.ReactNode;
 }
 
+interface PViewDesignElement extends HTMLElement {
+  meta?: any;
+  media?: any;
+  data?: any;
+  config?: any;
+}
+
 declare module "react" {
   namespace JSX {
     interface IntrinsicElements {
@@ -22,7 +29,11 @@ declare module "react" {
         [key: string]: any;
       };
       // 2. Assign the custom interface to the tag
-      "p-viewdesign": ViewDesignProps & React.HTMLAttributes<HTMLElement>;
+      "p-viewdesign": ViewDesignProps &
+        React.DetailedHTMLProps<
+          React.HTMLAttributes<PViewDesignElement>,
+          PViewDesignElement
+        >;
       "p-product-grid": any;
       "s-app-nav": any;
     }

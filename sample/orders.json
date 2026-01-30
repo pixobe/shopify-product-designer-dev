@@ -1,0 +1,443 @@
+{
+  "order": {
+    "id": "gid://shopify/Order/7478756376762",
+    "name": "#9167"
+  },
+  "items": [
+    {
+      "lineItemId": "gid://shopify/LineItem/15774222188730",
+      "variantId": "gid://shopify/ProductVariant/45265423073466",
+      "pixobeId": "e07aaab3-8099-4424-b55d-a4ab26673743",
+      "meta": {
+        "name": "Caneca Térmica de Cerveja Stanley | 709ML - Matte Black",
+        "id": "gid://shopify/ProductVariant/45265423073466"
+      },
+      "media": [
+        {
+          "id": "gid://shopify/MediaImage/31291886272698",
+          "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/caneca_termica_de_cerveja_stanley_709ml_matte_black_12911_1_268902ba7cd3159c10e835bb09059057_20230301162428.jpg?v=1769307468",
+          "alt": "",
+          "grid": {
+            "rLeft": 1.1503,
+            "rTop": 1.2677,
+            "scaleX": 0.2289,
+            "scaleY": 0.3316,
+            "stroke": "#CCCCCC"
+          },
+          "showGrid": true,
+          "etching": true,
+          "variantId": "gid://shopify/ProductVariant/45265423073466"
+        },
+        {
+          "id": "gid://shopify/MediaImage/31291896660154",
+          "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/caneca_preta_verso.jpg?v=1769307727",
+          "alt": "",
+          "grid": {
+            "rLeft": 1.7139,
+            "rTop": 0.4967,
+            "scaleX": 0.2023,
+            "scaleY": 0.5,
+            "stroke": "#C7C7C7"
+          },
+          "showGrid": true,
+          "etching": true,
+          "variantId": "gid://shopify/ProductVariant/45265423073466"
+        }
+      ],
+      "data": {
+        "design": [
+          {
+            "version": "7.1.0",
+            "objects": [],
+            "backgroundImage": {
+              "cropX": 0,
+              "cropY": 0,
+              "type": "Image",
+              "version": "7.1.0",
+              "originX": "left",
+              "originY": "top",
+              "left": 0,
+              "top": 0,
+              "width": 2000,
+              "height": 2000,
+              "fill": "rgb(0,0,0)",
+              "stroke": null,
+              "strokeWidth": 0,
+              "strokeDashArray": null,
+              "strokeLineCap": "butt",
+              "strokeDashOffset": 0,
+              "strokeLineJoin": "miter",
+              "strokeUniform": false,
+              "strokeMiterLimit": 4,
+              "scaleX": 0.195,
+              "scaleY": 0.195,
+              "angle": 0,
+              "flipX": false,
+              "flipY": false,
+              "opacity": 1,
+              "shadow": null,
+              "visible": true,
+              "backgroundColor": "",
+              "fillRule": "nonzero",
+              "paintFirst": "fill",
+              "globalCompositeOperation": "source-over",
+              "skewX": 0,
+              "skewY": 0,
+              "src": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/caneca_termica_de_cerveja_stanley_709ml_matte_black_12911_1_268902ba7cd3159c10e835bb09059057_20230301162428.jpg?v=1769307468",
+              "crossOrigin": "anonymous",
+              "filters": []
+            }
+          },
+          {
+            "version": "7.1.0",
+            "objects": [
+              {
+                "fontSize": 40,
+                "fontWeight": "normal",
+                "fontFamily": "Oswald",
+                "fontStyle": "normal",
+                "lineHeight": 1.16,
+                "text": "Fabiano",
+                "charSpacing": 0,
+                "textAlign": "left",
+                "styles": [],
+                "pathStartOffset": 0,
+                "pathSide": "left",
+                "pathAlign": "baseline",
+                "underline": false,
+                "overline": false,
+                "linethrough": false,
+                "textBackgroundColor": "",
+                "direction": "ltr",
+                "textDecorationThickness": 66.667,
+                "type": "IText",
+                "version": "7.1.0",
+                "originX": "center",
+                "originY": "center",
+                "left": 175.8995,
+                "top": 195,
+                "width": 109.2,
+                "height": 45.2,
+                "fill": {
+                  "type": "linear",
+                  "coords": {
+                    "x1": 0,
+                    "y1": 0,
+                    "x2": 1,
+                    "y2": 0
+                  },
+                  "colorStops": [
+                    {
+                      "offset": 0,
+                      "color": "rgba(199,199,199,0.7)"
+                    },
+                    {
+                      "offset": 0.3,
+                      "color": "rgba(199,199,199,0.9)"
+                    },
+                    {
+                      "offset": 0.5,
+                      "color": "rgba(199,199,199,1)"
+                    },
+                    {
+                      "offset": 0.7,
+                      "color": "rgba(199,199,199,0.9)"
+                    },
+                    {
+                      "offset": 1,
+                      "color": "rgba(199,199,199,0.7)"
+                    }
+                  ],
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "gradientUnits": "percentage"
+                },
+                "stroke": null,
+                "strokeWidth": 1,
+                "strokeDashArray": null,
+                "strokeLineCap": "butt",
+                "strokeDashOffset": 0,
+                "strokeLineJoin": "miter",
+                "strokeUniform": false,
+                "strokeMiterLimit": 4,
+                "scaleX": 0.5876,
+                "scaleY": 0.5876,
+                "angle": 0,
+                "flipX": false,
+                "flipY": false,
+                "opacity": 1,
+                "shadow": null,
+                "visible": true,
+                "backgroundColor": "",
+                "fillRule": "nonzero",
+                "paintFirst": "fill",
+                "globalCompositeOperation": "source-over",
+                "skewX": 0,
+                "skewY": 0
+              }
+            ],
+            "backgroundImage": {
+              "cropX": 0,
+              "cropY": 0,
+              "type": "Image",
+              "version": "7.1.0",
+              "originX": "left",
+              "originY": "top",
+              "left": 0,
+              "top": 0,
+              "width": 1080,
+              "height": 1080,
+              "fill": "rgb(0,0,0)",
+              "stroke": null,
+              "strokeWidth": 0,
+              "strokeDashArray": null,
+              "strokeLineCap": "butt",
+              "strokeDashOffset": 0,
+              "strokeLineJoin": "miter",
+              "strokeUniform": false,
+              "strokeMiterLimit": 4,
+              "scaleX": 0.362,
+              "scaleY": 0.362,
+              "angle": 0,
+              "flipX": false,
+              "flipY": false,
+              "opacity": 1,
+              "shadow": null,
+              "visible": true,
+              "backgroundColor": "",
+              "fillRule": "nonzero",
+              "paintFirst": "fill",
+              "globalCompositeOperation": "source-over",
+              "skewX": 0,
+              "skewY": 0,
+              "src": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/caneca_preta_verso.jpg?v=1769307727",
+              "crossOrigin": "anonymous",
+              "filters": []
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "config": {
+    "snapAngle": "90",
+    "customizationPrice": "0.00",
+    "fonts": [
+      {
+        "name": "Oswald",
+        "url": "https://fonts.gstatic.com/s/oswald/v57/TK3iWkUHHAIjg752GT8Gl-1PKw.woff2"
+      },
+      {
+        "name": "Times New Roman",
+        "url": ""
+      },
+      {
+        "name": "Quicksand",
+        "url": "https://fonts.gstatic.com/s/quicksand/v37/6xKtdSZaM9iE8KbpRA_hK1QNYuDyPw.woff2"
+      },
+      {
+        "name": "Raleway",
+        "url": "https://fonts.gstatic.com/s/raleway/v11/0dTEPzkLWceF7z0koJbX1A.woff2"
+      },
+      {
+        "name": "Montserrat",
+        "url": "https://fonts.gstatic.com/s/montserrat/v31/JTUSjIg1_i6t8kCHKm459WlhyyTh89Y.woff2"
+      },
+      {
+        "name": "Great Vibes",
+        "url": "https://fonts.gstatic.com/s/greatvibes/v21/RWmMoKWR9v4ksMfaWd_JN9XFiaQoDmlr.woff2"
+      },
+      {
+        "name": "Dancing Script",
+        "url": "https://fonts.gstatic.com/s/dancingscript/v29/If2RXTr6YS-zF4S-kcSWSVi_szLgiuEHiC4W.woff2"
+      },
+      {
+        "name": "Satisfy",
+        "url": "https://fonts.gstatic.com/s/satisfy/v22/rP2Hp2yn6lkG50LoCZOIHTWEBlw.woff2"
+      },
+      {
+        "name": "Lobster",
+        "url": "https://fonts.gstatic.com/s/lobster/v32/neILzCirqoswsqX9zoKmM4MwWJU.woff2"
+      },
+      {
+        "name": "Tangerine",
+        "url": "https://fonts.gstatic.com/s/tangerine/v18/IurY6Y5j_oScZZow4VOxCZZMprNA4A.woff2"
+      },
+      {
+        "name": "Kaushan Script",
+        "url": "https://fonts.gstatic.com/s/kaushanscript/v19/vm8vdRfvXFLG3OLnsO15WYS5DG74wNJVMJ8b.woff2"
+      },
+      {
+        "name": "Courgette",
+        "url": "https://fonts.gstatic.com/s/courgette/v19/wEO_EBrAnc9BLjLQAUk1VvoK_kgXiQ.woff2"
+      },
+      {
+        "name": "Alex Brush",
+        "url": "https://fonts.gstatic.com/s/alexbrush/v23/SZc83FzrJKuqFbwMKk6EhUXz7RlNiCY.woff2"
+      },
+      {
+        "name": "Cookie",
+        "url": "https://fonts.gstatic.com/s/cookie/v23/syky-y18lb0tSbf9kgqS1NDNpg.woff2"
+      },
+      {
+        "name": "Parisienne",
+        "url": "https://fonts.gstatic.com/s/parisienne/v14/E21i_d3kivvAkxhLEVZpQyhwD8CtevI.woff2"
+      }
+    ],
+    "gallery": [
+      {
+        "name": "Pets & Outros relacionados.",
+        "images": [
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet17.png?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet40.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet22.png?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet33.png?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet7.png?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/icone_7.jpg?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/icone_8.jpg?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet23.png?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/icone_10.jpg?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet18.png?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet21.png?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/icone_2.jpg?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet27.png?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/icone_3.jpg?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet15.png?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet14.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/icone_1.jpg?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet35.png?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/icone_11.jpg?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/icone_13.jpg?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet29.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet13.png?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet32.png?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet10.png?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/icone_5.jpg?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet19.png?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet11.png?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/icone_15.jpg?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet41.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet28.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet26.png?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet_3.png?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/icone_14.jpg?v=1766377150"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet37.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet_2.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet9.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet31.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet5.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet39.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet20.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet30.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet24.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet8.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet38.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet36.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet12.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet_6.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet4.png?v=1766377151"
+          },
+          {
+            "url": "https://cdn.shopify.com/s/files/1/0731/0380/2554/files/pet25.png?v=1766377151"
+          }
+        ]
+      }
+    ],
+    "supportContent": "<!-- Ajuda Necessária (layout clean e minimalista) -->\n<section class=\"help-needed\" aria-labelledby=\"help-needed-title\">\n  <h3 id=\"help-needed-title\">Ajuda necessária</h3>\n\n  <p class=\"lead\">\n    Quer que nossa equipe ajude com a sua arte (logo, imagem ou ajustes no layout)?\n    Clique em <strong>“Request Help”</strong> para adicionar essa opção ao carrinho e solicitar suporte.\n  </p>\n\n  <div class=\"card\" role=\"note\" aria-label=\"Como funciona\">\n    <h4>Como funciona</h4>\n    <ol>\n      <li>\n        Clique em <strong>“Request Help”</strong>.\n        A opção de suporte será <strong>adicionada ao carrinho</strong> e nós receberemos uma <strong>notificação interna</strong>.\n      </li>\n      <li>\n        <strong>Finalize o pedido normalmente</strong> para registrarmos o produto, quantidade e dados de entrega.\n      </li>\n      <li>\n        Após a <strong>confirmação do pedido</strong>, um designer entrará em contato <strong>em algumas horas</strong>\n        para solicitar arquivos, referências e alinhar os detalhes.\n      </li>\n    </ol>\n  </div>\n\n  <div class=\"card subtle\" role=\"note\" aria-label=\"Importante\">\n    <h4>Importante</h4>\n    <ul>\n      <li>\n        Essa opção é ideal quando você prefere que nossa equipe <strong>ajuste, recrie ou finalize</strong>\n        a personalização após o pedido.\n      </li>\n    </ul>\n\n    <p class=\"field-hint\">\n      Utilize o campo abaixo caso queira <strong>adiantar alguma informação</strong> para nossa equipe.\n    </p>\n  </div>\n\n  <div class=\"card subtle\" role=\"note\" aria-label=\"Dúvida comum\">\n    <h4>Dúvida comum: quanto custa?</h4>\n    <p class=\"faq\">\n      Temos o prazer de personalizar seu produto <strong>sem nenhum custo adicional</strong>. Aproveite.\n    </p>\n  </div>\n</section>\n\n<style>\n  .help-needed{\n    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;\n    max-width: 760px;\n    line-height: 1.45;\n    color: #111;\n  }\n  .help-needed h3{\n    font-size: 1.125rem;\n    margin: 0 0 .75rem 0;\n    font-weight: 650;\n    letter-spacing: .2px;\n  }\n  .help-needed .lead{\n    margin: 0 0 1rem 0;\n    color: #222;\n  }\n  .help-needed .card{\n    border: 1px solid rgba(0,0,0,.10);\n    border-radius: 10px;\n    padding: .9rem 1rem;\n    margin: 0 0 .75rem 0;\n    background: #fff;\n  }\n  .help-needed .card.subtle{\n    background: rgba(0,0,0,.02);\n  }\n  .help-needed h4{\n    margin: 0 0 .5rem 0;\n    font-size: .95rem;\n    font-weight: 650;\n  }\n  .help-needed ol,\n  .help-needed ul{\n    margin: 0;\n    padding-left: 1.15rem;\n  }\n  .help-needed li{\n    margin: .35rem 0;\n  }\n  .help-needed strong{\n    font-weight: 650;\n  }\n  .help-needed .field-hint{\n    margin: .75rem 0 0 0;\n    color: rgba(0,0,0,.78);\n    font-size: .95rem;\n  }\n  .help-needed .faq{\n    margin: 0;\n    color: rgba(0,0,0,.78);\n    font-size: .95rem;\n  }\n</style>"
+  }
+}

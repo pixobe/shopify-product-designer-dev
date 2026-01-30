@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 /**
  * 
@@ -22,6 +22,76 @@ type OrderCustomizationSuccess = {
   };
   items: OrderCustomizationItem[];
   config: unknown;
+};
+
+type ViewDesignElementProps = {
+  meta: OrderCustomizationItem["meta"];
+  media: OrderCustomizationItem["media"];
+  data: unknown;
+  config: OrderCustomizationSuccess["config"];
+};
+
+
+const ViewDesignElement = ({
+  meta,
+  media,
+  data,
+  config,
+}: ViewDesignElementProps) => {
+  const elementRef = useRef<any>(null);
+
+  useEffect(() => {
+    const el = document.createElement('p-viewdesign') as any;
+    elementRef.current = el;
+
+    // Set initial props
+    el.data = data || [];
+    el.meta = meta || null;
+    el.media = media || null;
+    el.config = config || null;
+
+    // Append to DOM
+    const container = elementRef.current?.parentElement;
+    if (container) {
+      container.appendChild(el);
+    }
+
+    return () => {
+      el.remove();
+      elementRef.current = null;
+    };
+  }, []); // Only create once
+
+  // Update props when they change
+  useEffect(() => {
+    if (elementRef.current) {
+      elementRef.current.data = data || [];
+    }
+  }, [data]);
+
+  useEffect(() => {
+    if (elementRef.current) {
+      elementRef.current.meta = meta || null;
+    }
+  }, [meta]);
+
+  useEffect(() => {
+    if (elementRef.current) {
+      elementRef.current.media = media || null;
+    }
+  }, [media]);
+
+  useEffect(() => {
+    if (elementRef.current) {
+      elementRef.current.config = config || null;
+    }
+  }, [config]);
+
+  return <div ref={(node) => {
+    if (node && elementRef.current && !node.contains(elementRef.current)) {
+      node.appendChild(elementRef.current);
+    }
+  }} />;
 };
 
 
@@ -140,7 +210,7 @@ export default function OrderCustomizationsPage() {
                     <s-heading>{item.meta.name}</s-heading>
                   )}
 
-                  <p-viewdesign
+                  <ViewDesignElement
                     meta={item.meta}
                     media={item.media}
                     data={
@@ -148,7 +218,7 @@ export default function OrderCustomizationsPage() {
                         ?.design
                     }
                     config={customization.config}
-                  ></p-viewdesign>
+                  />
                 </s-section>
               </s-box>
             ))}
