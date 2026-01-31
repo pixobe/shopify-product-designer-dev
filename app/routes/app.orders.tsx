@@ -31,18 +31,20 @@ type ViewDesignElementProps = {
   config: OrderCustomizationSuccess["config"];
 };
 
-
 const ViewDesignElement = ({
   meta,
   media,
   data,
   config,
 }: ViewDesignElementProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const elementRef = useRef<any>(null);
 
   useEffect(() => {
+    if (!containerRef.current) return;
+
+    // Create the custom element
     const el = document.createElement('p-viewdesign') as any;
-    elementRef.current = el;
 
     // Set initial props
     el.data = data || [];
@@ -50,11 +52,9 @@ const ViewDesignElement = ({
     el.media = media || null;
     el.config = config || null;
 
-    // Append to DOM
-    const container = elementRef.current?.parentElement;
-    if (container) {
-      container.appendChild(el);
-    }
+    // Append to container
+    containerRef.current.appendChild(el);
+    elementRef.current = el;
 
     return () => {
       el.remove();
@@ -87,11 +87,7 @@ const ViewDesignElement = ({
     }
   }, [config]);
 
-  return <div ref={(node) => {
-    if (node && elementRef.current && !node.contains(elementRef.current)) {
-      node.appendChild(elementRef.current);
-    }
-  }} />;
+  return <div ref={containerRef} />;
 };
 
 
