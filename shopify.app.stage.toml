@@ -6,20 +6,19 @@ application_url = "https://mactunnel.pixobe.com"
 embedded = true
 handle = "pixobe-product-designer-stage"
 
+[build]
+automatically_update_urls_on_dev = true
+
 [webhooks]
 api_version = "2025-07"
 
-[[webhooks.subscriptions]]
-topics = ["app/scopes_update"]
-uri = "/webhooks/app/scopes_update"
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
 
-[[webhooks.subscriptions]]
-topics = ["app/uninstalled"]
-uri = "/webhooks/app/uninstalled"
-
-[[webhooks.subscriptions]]
-compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
-uri = "/webhooks/compliance"
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
@@ -29,7 +28,7 @@ scopes = "read_metaobjects,read_orders,read_products,unauthenticated_read_metaob
 redirect_urls = [
   "https://mactunnel.pixobe.com.pixobe.com/auth/callback",
   "https://mactunnel.pixobe.com.pixobe.com/shopify/callback",
-  "https://mactunnel.pixobe.com.pixobe.com/api/auth/callback",
+  "https://mactunnel.pixobe.com.pixobe.com/api/auth/callback"
 ]
 
 [app_proxy]
@@ -39,9 +38,6 @@ prefix = "apps"
 
 [pos]
 embedded = false
-[build]
-automatically_update_urls_on_dev = true
-
 
 [metafields]
 api_version = "2026-01"
@@ -51,9 +47,9 @@ name = "Pixobe Media Settings"
 display_name_field = "config"
 description = "Stores a media reference plus Pixobe's raw configuration payload."
 
-[metaobjects.app.product_media_item.access]
-admin = "merchant_read_write"
-storefront = "public_read"
+  [metaobjects.app.product_media_item.access]
+  admin = "merchant_read_write"
+  storefront = "public_read"
 
 [metaobjects.app.product_media_item.fields.config]
 name = "Product Media config json"
@@ -65,5 +61,6 @@ type = "list.metaobject_reference<$app:product_media_item>"
 name = "Pixobe Media Config"
 description = "Ordered list of Pixobe media entries attached to the product."
 
-access.storefront = "public_read"
-access.admin = "merchant_read_write"
+  [variant.metafields.app.pixobe_media_items.access]
+  storefront = "public_read"
+  admin = "merchant_read_write"

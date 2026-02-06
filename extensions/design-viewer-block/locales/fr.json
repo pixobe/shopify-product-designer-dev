@@ -1,7 +1,12 @@
 {
-  "name": "View Customization",
-  "title": "to open the customization for this order.",
-  "linkTitle": "Click here",
-  "loading": "Checking customization status...",
-  "notCustomized": "The order is not customized"
+  "name": "Voir la personnalisation",
+  "title": "pour ouvrir la personnalisation de cette commande.",
+  "linkTitle": "Cliquez ici",
+  "loading": "Vérification de l’état de la personnalisation...",
+  "notCustomized": "La commande n’est pas personnalisée",
+  "accessError": "Impossible d’accéder aux données de la commande. Veuillez vérifier que l’application dispose des autorisations nécessaires pour lire les commandes.",
+  "queryError": "Échec du chargement des informations de la commande. Veuillez réessayer.",
+  "orderNotFound": "Commande introuvable ou n’existe plus.",
+  "networkError": "Erreur réseau. Veuillez vérifier votre connexion et réessayer.",
+  "noOrderSelected": "Aucune commande sélectionnée"
 }

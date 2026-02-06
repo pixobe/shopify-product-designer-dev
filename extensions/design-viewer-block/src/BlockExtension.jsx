@@ -25,73 +25,137 @@ export default async () => {
 
 function Extension() {
   const { i18n, data, query } = shopify;
-  const [isCustomized, setIsCustomized] = useState(null);
+  const [state, setState] = useState({
+    status: "loading", // 'loading' | 'success' | 'error' | 'no-order'
+    isCustomized: false,
+    errorMessage: null,
+  });
 
-  const selected = data?.selected;
-  const orderId = selected?.[0]?.id;
-
-  // Construct full admin URL dynamically
+  const orderId = data?.selected?.[0]?.id;
   const appUrl = orderId
     ? `/app/orders?order_id=${encodeURIComponent(orderId)}`
     : "/app/orders";
 
   useEffect(() => {
-    let isMounted = true;
-
     if (!orderId) {
-      setIsCustomized(false);
-      return () => {
-        isMounted = false;
-      };
+      setState({
+        status: "no-order",
+        isCustomized: false,
+        errorMessage: null,
+      });
+      return;
     }
 
-    (async () => {
+    let isCancelled = false;
+
+    const checkCustomization = async () => {
       try {
         const result = await query(ORDER_CUSTOMIZATION_QUERY, {
           variables: { id: orderId },
         });
 
-        if (!isMounted) return;
+        if (isCancelled) return;
+
+        // Handle GraphQL errors
         if (result?.errors?.length) {
-          setIsCustomized(false);
+          const errorMessage = result.errors[0]?.message || "Unknown error";
+
+          console.log("Error while retrieving order data", errorMessage);
+          const isAccessError =
+            errorMessage.toLowerCase().includes("access") ||
+            errorMessage.toLowerCase().includes("permission") ||
+            errorMessage.toLowerCase().includes("unauthorized");
+
+          setState({
+            status: "error",
+            isCustomized: false,
+            errorMessage: isAccessError
+              ? i18n.translate("accessError")
+              : i18n.translate("queryError"),
+          });
           return;
         }
 
-        const lineItems = result?.data?.order?.lineItems?.nodes ?? [];
+        // Access order data directly
+        const order = result?.data?.order;
+
+        // Handle missing order data
+        if (!order) {
+          setState({
+            status: "error",
+            isCustomized: false,
+            errorMessage: i18n.translate("orderNotFound"),
+          });
+          return;
+        }
+
+        const lineItems = order.lineItems?.nodes ?? [];
         const hasCustomization = lineItems.some((item) =>
-          (item.customAttributes ?? []).some(
+          item.customAttributes?.some(
             (attr) =>
               attr?.key === CUSTOMIZATION_PROPERTY_KEY &&
-              (attr?.value ?? "").trim() !== "",
+              attr?.value?.trim() !== "",
           ),
         );
 
-        setIsCustomized(hasCustomization);
+        setState({
+          status: "success",
+          isCustomized: hasCustomization,
+          errorMessage: null,
+        });
       } catch (error) {
-        if (!isMounted) return;
-        setIsCustomized(false);
+        if (!isCancelled) {
+          setState({
+            status: "error",
+            isCustomized: false,
+            errorMessage: i18n.translate("networkError"),
+          });
+        }
       }
-    })();
+    };
+
+    checkCustomization();
 
     return () => {
-      isMounted = false;
+      isCancelled = true;
     };
-  }, [orderId, query]);
+  }, [orderId, query, i18n]);
 
-  return (
-    <s-admin-block heading="Pixobe Order Customization">
-      <s-stack direction="block">
-        {isCustomized === null ? (
-          <s-text color="subdued">{i18n.translate("loading")}</s-text>
-        ) : isCustomized ? (
+  const renderContent = () => {
+    switch (state.status) {
+      case "loading":
+        return <s-text color="subdued">{i18n.translate("loading")}</s-text>;
+
+      case "error":
+        return (
+          <s-banner tone="critical">
+            <s-text>{state.errorMessage}</s-text>
+          </s-banner>
+        );
+
+      case "no-order":
+        return (
+          <s-text color="subdued">{i18n.translate("noOrderSelected")}</s-text>
+        );
+
+      case "success":
+        return state.isCustomized ? (
           <s-box>
             <s-link href={appUrl}>{i18n.translate("linkTitle")}</s-link>{" "}
             <s-text>{i18n.translate("title")}</s-text>
           </s-box>
         ) : (
           <s-text color="subdued">{i18n.translate("notCustomized")}</s-text>
-        )}
-      </s-stack>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <s-admin-block heading="Pixobe Order Customization">
+      <s-stack direction="block">{renderContent()}</s-stack>
     </s-admin-block>
   );
 }

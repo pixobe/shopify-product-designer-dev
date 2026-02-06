@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "react-router build",
-    "dev": "shopify app dev --tunnel-url https://mactunnel.pixobe.com:3000 --config stage",
+    "dev": "shopify app dev --tunnel-url https://mactunnel.pixobe.com:3000 --config stage -s pixobe-development.myshopify.com",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
     "deploy": "shopify app deploy",

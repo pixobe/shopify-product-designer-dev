@@ -1,7 +1,13 @@
+// pt.json
 {
   "name": "View Customization",
   "title": "to open the customization for this order.",
   "linkTitle": "Click here",
   "loading": "Checking customization status...",
-  "notCustomized": "The order is not customized"
+  "notCustomized": "The order is not customized",
+  "accessError": "Não foi possível acessar os dados do pedido. Certifique-se de que o aplicativo tenha as permissões necessárias para ler pedidos.",
+  "queryError": "Falha ao carregar informações do pedido. Por favor, tente novamente.",
+  "orderNotFound": "Pedido não encontrado ou não existe mais.",
+  "networkError": "Erro de rede. Verifique sua conexão e tente novamente.",
+  "noOrderSelected": "Nenhum pedido selecionado"
 }

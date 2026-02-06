@@ -1,7 +1,13 @@
+// en.json
 {
   "name": "View Customization",
   "title": "to open the customization for this order.",
   "linkTitle": "Click here",
   "loading": "Checking customization status...",
-  "notCustomized": "The order is not customized"
+  "notCustomized": "The order is not customized",
+  "accessError": "Unable to access order data. Please ensure the app has the required permissions to read orders.",
+  "queryError": "Failed to load order information. Please try again.",
+  "orderNotFound": "Order not found or no longer exists.",
+  "networkError": "Network error. Please check your connection and try again.",
+  "noOrderSelected": "No order selected"
 }
