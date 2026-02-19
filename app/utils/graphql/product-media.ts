@@ -377,15 +377,22 @@ const fetchVariantMediaMetaobjectIds = async (
   const metafield = body.data?.productVariant?.metafield;
   if (!metafield) return [];
 
-  const parsedValue = safeJsonParse<string[]>(metafield.value);
-  if (Array.isArray(parsedValue)) {
-    return parsedValue.filter((id): id is string => typeof id === "string");
+  const referenceNodes = metafield.references?.nodes;
+  if (Array.isArray(referenceNodes)) {
+    return referenceNodes
+      .map((node: any) => node?.id)
+      .filter((id: any): id is string => typeof id === "string" && id.length > 0);
   }
 
-  const nodes = metafield.references?.nodes ?? [];
-  return nodes
-    .map((node: any) => node?.id)
-    .filter((id: any): id is string => typeof id === "string");
+  // Fallback for stores/API versions where references are not returned.
+  const parsedValue = safeJsonParse<string[]>(metafield.value);
+  if (!Array.isArray(parsedValue)) {
+    return [];
+  }
+
+  return parsedValue.filter(
+    (id): id is string => typeof id === "string" && id.length > 0,
+  );
 };
 
 const createMetaobject = async (admin: any, media: MediaPayload) => {
