@@ -18,7 +18,7 @@ type Product = {
   image?: { url: string; altText?: string | null } | null;
 };
 
-type ProductsPayload = { products: Product[] };
+type ProductsPayload = { products: Product[]; error?: string };
 type LoaderData = { products: Product[]; adminProductHref: string };
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -67,6 +67,7 @@ export default function ProductsPage() {
     () => fetcher.data?.products ?? loaderData.products ?? [],
     [fetcher.data?.products, loaderData.products],
   );
+  const searchError = fetcher.data?.error ?? null;
 
   const isLoading = fetcher.state === "loading";
 
@@ -141,6 +142,11 @@ export default function ProductsPage() {
               }}
             />
           </s-stack>
+          {searchError ? (
+            <p role="alert" style={{ color: "#b42318", marginTop: 8 }}>
+              {searchError}
+            </p>
+          ) : null}
         </form>
 
       </s-section>

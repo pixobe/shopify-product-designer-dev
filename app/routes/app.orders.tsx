@@ -12,7 +12,7 @@ type OrderCustomizationItem = {
     name: string | null;
   } | null;
   media: unknown;
-  data: unknown;
+  data: { design: Array<any>, help?: any };
 };
 
 type OrderCustomizationSuccess = {
@@ -27,7 +27,8 @@ type OrderCustomizationSuccess = {
 type ViewDesignElementProps = {
   meta: OrderCustomizationItem["meta"];
   media: OrderCustomizationItem["media"];
-  data: unknown;
+  data: Array<any>;
+  help: Array<{ message?: string }>
   config: OrderCustomizationSuccess["config"];
 };
 
@@ -36,21 +37,21 @@ const ViewDesignElement = ({
   media,
   data,
   config,
+  help
 }: ViewDesignElementProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const elementRef = useRef<any>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
-
     // Create the custom element
     const el = document.createElement('p-viewdesign') as any;
-
     // Set initial props
     el.data = data || [];
     el.meta = meta || null;
     el.media = media || null;
     el.config = config || null;
+    el.help = help;
 
     // Append to container
     containerRef.current.appendChild(el);
@@ -125,9 +126,7 @@ export default function OrderCustomizationsPage() {
     searchOrder(numericId);
   }, []);
 
-  // -------------------------------------------
-  // 🔥 SEARCH FUNCTION USED BY BOTH page-load + form submit
-  // -------------------------------------------
+
   const searchOrder = async (orderId: string) => {
     if (!orderId.trim()) {
       setError("Enter an order ID to load its customization.");
@@ -209,10 +208,8 @@ export default function OrderCustomizationsPage() {
                   <ViewDesignElement
                     meta={item.meta}
                     media={item.media}
-                    data={
-                      (item.data as { design?: unknown } | null | undefined)
-                        ?.design
-                    }
+                    data={item.data?.design}
+                    help={item.data?.help}
                     config={customization.config}
                   />
                 </s-section>
