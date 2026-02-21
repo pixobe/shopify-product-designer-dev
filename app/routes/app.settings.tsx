@@ -20,6 +20,107 @@ import {
   normalizePrice,
 } from "app/utils/custom-price-product.utils";
 
+const ENCRYPTED_VALUE_PREFIX = "enc:v1:";
+const TEXT_ENCODER = new TextEncoder();
+
+const bytesToBase64 = (bytes: Uint8Array): string => {
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(bytes).toString("base64");
+  }
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return globalThis.btoa(binary);
+};
+
+const base64ToBytes = (value: string): Uint8Array => {
+  if (typeof Buffer !== "undefined") {
+    return Uint8Array.from(Buffer.from(value, "base64"));
+  }
+  const binary = globalThis.atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
+};
+
+const getApiEncryptionKey = async (): Promise<CryptoKey | null> => {
+  const encryptionSecret = process.env.APP_IMAGE_GEN_API_KEY_ENC_KEY?.trim();
+  if (!encryptionSecret) {
+    return null;
+  }
+  const hash = await crypto.subtle.digest(
+    "SHA-256",
+    TEXT_ENCODER.encode(encryptionSecret),
+  );
+  return crypto.subtle.importKey(
+    "raw",
+    hash,
+    { name: "AES-GCM" },
+    false,
+    ["encrypt", "decrypt"],
+  );
+};
+
+const encryptSettingValue = async (value?: string): Promise<string> => {
+  const trimmedValue = value?.trim() ?? "";
+  if (!trimmedValue) {
+    return "";
+  }
+  if (trimmedValue.startsWith(ENCRYPTED_VALUE_PREFIX)) {
+    return trimmedValue;
+  }
+  const key = await getApiEncryptionKey();
+  if (!key) {
+    return trimmedValue;
+  }
+
+  const iv = new Uint8Array(12);
+  crypto.getRandomValues(iv);
+  const encrypted = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    TEXT_ENCODER.encode(trimmedValue),
+  );
+  const encryptedBytes = new Uint8Array(encrypted);
+  return `${ENCRYPTED_VALUE_PREFIX}${bytesToBase64(iv)}:${bytesToBase64(encryptedBytes)}`;
+};
+
+const decryptSettingValue = async (value?: string): Promise<string> => {
+  const storedValue = value?.trim() ?? "";
+  if (!storedValue) {
+    return "";
+  }
+  if (!storedValue.startsWith(ENCRYPTED_VALUE_PREFIX)) {
+    return storedValue;
+  }
+  const key = await getApiEncryptionKey();
+  if (!key) {
+    return storedValue;
+  }
+  const payload = storedValue.slice(ENCRYPTED_VALUE_PREFIX.length);
+  const [ivBase64, encryptedBase64] = payload.split(":");
+  if (!ivBase64 || !encryptedBase64) {
+    return "";
+  }
+
+  try {
+    const iv = new Uint8Array(base64ToBytes(ivBase64));
+    const encryptedBytes = new Uint8Array(base64ToBytes(encryptedBase64));
+    const decrypted = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv },
+      key,
+      encryptedBytes,
+    );
+    return new TextDecoder().decode(decrypted);
+  } catch (error) {
+    console.error("Failed to decrypt APP image generator API key", error);
+    return "";
+  }
+};
+
 
 type FontEntry = {
   id: string;
@@ -38,6 +139,7 @@ type SavedSettings = {
   fonts: FontSummary[];
   gallery: GallerySummary[];
   supportContent?: string;
+  imageGenerateApiKey?: string;
 };
 
 const createFontEntry = (): FontEntry => ({
@@ -122,19 +224,25 @@ const toGalleryEntries = (galleries?: GallerySummary[]): GalleryEntry[] => {
 
 export const loader = async ({
   request,
-}: LoaderFunctionArgs): Promise<{ settings: Record<string, any> }> => {
+}: LoaderFunctionArgs): Promise<{
+  settings: Record<string, any>;
+  isImageGenerateFeatureEnabled: boolean;
+}> => {
   const { admin, session } = await authenticate.admin(request);
-  let settings = await getAppMetafield(
+  const loadedSettings = await getAppMetafield(
     admin,
     METADATA_FIELD_APP_SETTINGS,
     { shop: session.shop },
+  ) as Record<string, any> | null;
+  const settings: Record<string, any> = loadedSettings ?? {
+    fonts: [],
+  };
+  settings.imageGenerateApiKey = await decryptSettingValue(
+    settings.imageGenerateApiKey,
   );
-  if (!settings) {
-    settings = {
-      fonts: [],
-    }
-  }
-  return { settings }
+  const isImageGenerateFeatureEnabled =
+    process.env.APP_FEATURE_IMAGE_GENERATE === "true";
+  return { settings, isImageGenerateFeatureEnabled }
 };
 
 
@@ -159,6 +267,7 @@ export const action = async ({
       normalizePrice(body?.customizationPrice);
 
     body.customizationPrice = customizationPrice;
+    body.imageGenerateApiKey = await encryptSettingValue(body?.imageGenerateApiKey);
 
     if (customizationPriceAmount > 0) {
       await ensureCustomizationProduct(admin, customizationPrice);
@@ -178,7 +287,16 @@ export const action = async ({
       );
     }
 
-    return data({ settings: body, success: true }, { status: 200 });
+    return data(
+      {
+        settings: {
+          ...body,
+          imageGenerateApiKey: await decryptSettingValue(body.imageGenerateApiKey),
+        },
+        success: true,
+      },
+      { status: 200 },
+    );
   } catch (error: any) {
     console.error("Failed to persist Pixobe app settings", error);
     return data(
@@ -191,7 +309,7 @@ export const action = async ({
 
 
 export default function SettingsRoute() {
-  const { settings } = useLoaderData<typeof loader>();
+  const { settings, isImageGenerateFeatureEnabled } = useLoaderData<typeof loader>();
 
   const settingsFetcher = useFetcher<SettingsActionResponse>();
   const showToast = (message: string, options?: ToastOptions) => {
@@ -210,6 +328,9 @@ export default function SettingsRoute() {
   );
   const [supportContent, setSupportContent] = useState(
     () => settings?.supportContent ?? "",
+  );
+  const [imageGenerateApiKey, setImageGenerateApiKey] = useState(
+    () => settings?.imageGenerateApiKey ?? "",
   );
 
   const [fonts, setFonts] = useState<FontEntry[]>(() =>
@@ -247,6 +368,7 @@ export default function SettingsRoute() {
       fonts: sanitizedFonts,
       gallery: sanitizedGalleries,
       supportContent: supportContent.trim(),
+      imageGenerateApiKey,
     };
   };
 
@@ -279,6 +401,7 @@ export default function SettingsRoute() {
     setFonts(() => toFontEntries(nextSettings.fonts));
     setGalleries(() => toGalleryEntries(nextSettings.gallery));
     setSupportContent(nextSettings.supportContent ?? "");
+    setImageGenerateApiKey(nextSettings.imageGenerateApiKey ?? "");
   }, [settingsFetcher.data]);
 
   const isSavingSettings = settingsFetcher.state === "submitting";
@@ -418,6 +541,7 @@ export default function SettingsRoute() {
               onInput={(event: any) => setSupportContent(event.currentTarget.value)}
             />
           </s-section>
+
           <s-section>
             <s-stack direction="block" gap="base">
               <s-stack direction="inline" alignItems="center" justifyContent="space-between">
@@ -626,6 +750,15 @@ export default function SettingsRoute() {
               )}
             </s-stack>
           </s-section>
+          {isImageGenerateFeatureEnabled ? (
+            <s-section heading="AI Image Generator">
+              <s-password-field
+                label="Gemini API Key"
+                value={imageGenerateApiKey}
+                onInput={(event) => setImageGenerateApiKey(event.currentTarget.value)}
+              />
+            </s-section>
+          ) : null}
           <s-button
             type="submit"
             variant="primary"

@@ -1,9 +1,6 @@
 import { data, type LoaderFunctionArgs } from "react-router";
 import { authenticate } from "../shopify.server";
-import { getProductVariantMedia } from "app/utils/graphql/product-media";
 import { normalizeVariantId } from "app/utils/common-utils";
-import { METADATA_FIELD_APP_SETTINGS } from "app/constants/settings";
-import { getAppMetafield } from "app/utils/graphql/app-metadata";
 import { getCustomizedData } from "app/utils/customized-data";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -37,7 +34,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     if (!payload) {
       return data({ error: "Customized data not found" }, { status: 404 });
     }
-    return data(payload);
+
+    const config = payload?.config ?? {};
+    const hasImageGenerateApiKey =
+      typeof config.imageGenerateApiKey === "string" &&
+      config.imageGenerateApiKey.length > 0;
+
+    if (!hasImageGenerateApiKey) {
+      return data(payload);
+    }
+
+    const { imageGenerateApiKey: _, ...restConfig } = config;
+    return data({
+      ...payload,
+      config: {
+        ...restConfig,
+        aimodel: "gemini",
+      },
+    });
   } catch (error: any) {
     console.error("Failed to load variant media", error);
     return data(

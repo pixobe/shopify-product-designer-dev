@@ -11,7 +11,7 @@ export default function App() {
           rel="stylesheet"
           href="https://cdn.shopify.com/static/fonts/inter/v4/styles.css"
         />
-        <script type="module" src="https://product-dev.pixobe.com/product-designer.js"></script>
+        <script type="module" src="https://product.pixobe.com/product-designer.js"></script>
         <Meta />
         <Links />
       </head>
